@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RAMPDOWN - Performance Dashboard</title>
+    <style>
+        :root {
+            --bg: #f0f2f5;
+            --card: #ffffff;
+            --header: #000000;
+            --primary: #2563eb;
+            --text: #1e293b;
+            --muted: #64748b;
+            --border: #e2e8f0;
+            /* Cores dos KPIs */
+            --low: #ef4444;
+            --mid: #f59e0b;
+            --high: #10b981;
+        }
+
+        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
+        body { margin: 0; background: var(--bg); color: var(--text); }
+
+        /* HEADER COM LINHAS GRÁFICAS */
+        header {
+            background: var(--header);
+            color: #fff;
+            padding: 20px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.8);
+        }
+
+        header::after {
+            content: "";
+            position: absolute;
+            top: 0; right: 0; bottom: 0; left: 0;
+            background: 
+                linear-gradient(115deg, transparent 70%, rgba(255,255,255,0.08) 70.5%, rgba(255,255,255,0.08) 72%, transparent 72.5%),
+                linear-gradient(115deg, transparent 75%, rgba(255,255,255,0.05) 75.5%, rgba(255,255,255,0.05) 78%, transparent 78.5%);
+            background-size: 200% 100%;
+            animation: moveLines 8s linear infinite;
+        }
+
+        @keyframes moveLines {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+
+        .logo-area { position: relative; z-index: 2; font-weight: 800; font-size: 20px; letter-spacing: 1px; }
+
+        /* LAYOUT */
+        .container { max-width: 1100px; margin: 30px auto; padding: 0 20px; }
+        .card { background: var(--card); border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 24px; border: 1px solid var(--border); }
+        .card-title { font-weight: 700; font-size: 18px; margin-bottom: 20px; color: var(--text); border-left: 4px solid var(--primary); padding-left: 12px; }
+
+        /* GRID DE KPIS */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
+        .kpi-block { background: #fafafa; border: 1px solid var(--border); border-radius: 12px; padding: 20px; transition: transform 0.2s; }
+        .kpi-block:hover { transform: translateY(-3px); }
+        .kpi-name { font-weight: 700; color: var(--muted); font-size: 14px; margin-bottom: 8px; display: block; }
+        .kpi-stats { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
+        .kpi-current { font-size: 28px; font-weight: 800; color: var(--header); }
+        .kpi-total { color: var(--muted); font-size: 16px; }
+
+        /* PROGRESS BAR */
+        .progress-bg { background: #e5e7eb; height: 12px; border-radius: 6px; overflow: hidden; position: relative; }
+        .progress-fill { height: 100%; width: 0%; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s; }
+        .kpi-percent { display: block; text-align: right; font-weight: 700; font-size: 14px; margin-top: 8px; }
+
+        /* CONFIGURAÇÃO */
+        .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--muted); }
+        .row-inputs { display: flex; gap: 10px; }
+        input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; outline: none; }
+        input:focus { border-color: var(--primary); ring: 2px solid rgba(37, 99, 235, 0.1); }
+        .btn { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; transition: opacity 0.2s; }
+        .btn:hover { opacity: 0.9; }
+
+        /* DINAMISMO DE CORES */
+        .bg-low { background-color: var(--low); }
+        .bg-mid { background-color: var(--mid); }
+        .bg-high { background-color: var(--high); }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="logo-area">RAMPDOWN // PERFORMANCE</div>
+    <div style="z-index: 2; font-size: 12px; opacity: 0.8;">SISTEMA DE GESTÃO INTEGRADA</div>
+</header>
+
+<div class="container">
+    
+    <div class="card">
+        <div class="card-title">Painel de Performance Operacional</div>
+        <div class="kpi-grid">
+            <div class="kpi-block" id="block-OATS">
+                <span class="kpi-name">OATS</span>
+                <div class="kpi-stats">
+                    <span class="kpi-current" id="cur-OATS">0</span>
+                    <span class="kpi-total">/ <span id="max-OATS">0</span></span>
+                </div>
+                <div class="progress-bg">
+                    <div id="bar-OATS" class="progress-fill"></div>
+                </div>
+                <span class="kpi-percent" id="pct-OATS">0%</span>
+            </div>
+
+            <div class="kpi-block" id="block-SCE">
+                <span class="kpi-name">SCE</span>
+                <div class="kpi-stats">
+                    <span class="kpi-current" id="cur-SCE">0</span>
+                    <span class="kpi-total">/ <span id="max-SCE">0</span></span>
+                </div>
+                <div class="progress-bg">
+                    <div id="bar-SCE" class="progress-fill"></div>
+                </div>
+                <span class="kpi-percent" id="pct-SCE">0%</span>
+            </div>
+
+            <div class="kpi-block" id="block-CRIT1">
+                <span class="kpi-name">CRIT #1</span>
+                <div class="kpi-stats">
+                    <span class="kpi-current" id="cur-CRIT1">0</span>
+                    <span class="kpi-total">/ <span id="max-CRIT1">0</span></span>
+                </div>
+                <div class="progress-bg">
+                    <div id="bar-CRIT1" class="progress-fill"></div>
+                </div>
+                <span class="kpi-percent" id="pct-CRIT1">0%</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-title">Configurações de Indicadores</div>
+        <div class="config-grid">
+            <div class="input-group">
+                <label>OATS (Atual | Meta)</label>
+                <div class="row-inputs">
+                    <input type="number" id="in-OATS-cur" placeholder="Realizado" oninput="liveUpdate()">
+                    <input type="number" id="in-OATS-max" placeholder="Meta" oninput="liveUpdate()">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>SCE (Atual | Meta)</label>
+                <div class="row-inputs">
+                    <input type="number" id="in-SCE-cur" placeholder="Realizado" oninput="liveUpdate()">
+                    <input type="number" id="in-SCE-max" placeholder="Meta" oninput="liveUpdate()">
+                </div>
+            </div>
+            <div class="input-group">
+                <label>CRIT #1 (Atual | Meta)</label>
+                <div class="row-inputs">
+                    <input type="number" id="in-CRIT1-cur" placeholder="Realizado" oninput="liveUpdate()">
+                    <input type="number" id="in-CRIT1-max" placeholder="Meta" oninput="liveUpdate()">
+                </div>
+            </div>
+        </div>
+        <div style="margin-top: 10px;">
+            <button class="btn" onclick="saveData()">SALVAR DEFINIÇÕES</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const ids = ['OATS', 'SCE', 'CRIT1'];
+
+    function liveUpdate() {
+        ids.forEach(id => {
+            const cur = parseFloat(document.getElementById(`in-${id}-cur`).value) || 0;
+            const max = parseFloat(document.getElementById(`in-${id}-max`).value) || 0;
+            
+            // Atualiza textos do card
+            document.getElementById(`cur-${id}`).textContent = cur;
+            document.getElementById(`max-${id}`).textContent = max;
+            
+            let percent = max > 0 ? (cur / max) * 100 : 0;
+            if (percent > 100) percent = 100;
+            
+            document.getElementById(`pct-${id}`).textContent = percent.toFixed(1) + "%";
+            
+            const bar = document.getElementById(`bar-${id}`);
+            bar.style.width = percent + "%";
+
+            // Lógica de cores
+            bar.className = "progress-fill"; // reset
+            if (percent < 50) bar.classList.add("bg-low");
+            else if (percent < 85) bar.classList.add("bg-mid");
+            else bar.classList.add("bg-high");
+        });
+    }
+
+    function saveData() {
+        const data = {};
+        ids.forEach(id => {
+            data[id] = {
+                cur: document.getElementById(`in-${id}-cur`).value,
+                max: document.getElementById(`in-${id}-max`).value
+            };
+        });
+        localStorage.setItem('rampdown_kpi_v2', JSON.stringify(data));
+        alert("Configurações salvas no navegador!");
+    }
+
+    function loadData() {
+        const saved = localStorage.getItem('rampdown_kpi_v2');
+        if (saved) {
+            const data = JSON.parse(saved);
+            ids.forEach(id => {
+                if (data[id]) {
+                    document.getElementById(`in-${id}-cur`).value = data[id].cur;
+                    document.getElementById(`in-${id}-max`).value = data[id].max;
+                }
+            });
+            liveUpdate();
+        }
+    }
+
+    // Inicialização
+    window.onload = loadData;
+// ... (mantenha as funções anteriores e adicione estas)
+
+    // Exporta as metas para um arquivo .json
+    function exportConfig() {
+        const saved = localStorage.getItem('rampdown_kpi_v2');
+        if (!saved) return alert("Não há dados para exportar.");
+        
+        const blob = new Blob([saved], { type: "application/json" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "rampdown_config.json";
+        a.click();
+    }
+
+    // Importa as metas de um arquivo .json
+    function importConfig(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const content = e.target.result;
+                JSON.parse(content); // Valida se é JSON mesmo
+                localStorage.setItem('rampdown_kpi_v2', content);
+                loadData();
+                alert("Configurações importadas com sucesso!");
+            } catch (err) {
+                alert("Arquivo inválido.");
+            }
+        };
+        reader.readAsText(file);
+    }
+</script>
+</body>
+</html>
