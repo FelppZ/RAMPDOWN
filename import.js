@@ -1,68 +1,118 @@
+// --- CONFIGURAÇÃO DO REPOSITÓRIO ---
+const REPO_PATH = "felppz/RAMPDOWN"; // COLOQUE SEU USUARIO/REPO AQUI
+const FILE_NAME = "data.json";
+const kpiList = ['OATS', 'SCE', 'CRIT1'];
+
+// 1. FUNÇÃO PARA CARREGAR OS DADOS LOGO AO ABRIR O EDITOR
+async function loadCurrentData() {
+    try {
+        // Buscamos o arquivo do GitHub Pages (ou da API) para preencher o formulário
+        // Usamos um timestamp (?t=...) para evitar que o navegador carregue dados antigos do cache
+        const response = await fetch(`https://raw.githubusercontent.com/${REPO_PATH}/main/${FILE_NAME}?t=${new Date().getTime()}`);
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Preenche os inputs com os valores que estão no GitHub
+            kpiList.forEach(id => {
+                if (data[id]) {
+                    document.getElementById(`in-${id}-cur`).value = data[id].cur;
+                    document.getElementById(`in-${id}-max`).value = data[id].max;
+                }
+            });
+            
+            // Atualiza a prévia visual (os cards)
+            liveCalc();
+            console.log("Dados carregados com sucesso.");
+        }
+    } catch (err) {
+        console.warn("Ainda não existem dados no GitHub ou o caminho está incorreto.");
+    }
+}
+
+// Executa a carga inicial assim que a página termina de carregar
+window.onload = loadCurrentData;
+
+// 2. CÁLCULO EM TEMPO REAL (MANTÉM IGUAL)
+function liveCalc() {
+    kpiList.forEach(id => {
+        const cur = parseFloat(document.getElementById(`in-${id}-cur`).value) || 0;
+        const max = parseFloat(document.getElementById(`in-${id}-max`).value) || 0;
+        
+        let percent = max > 0 ? (cur / max) * 100 : 0;
+        const displayPercent = percent.toFixed(1);
+
+        document.getElementById(`v-${id}`).textContent = cur;
+        document.getElementById(`m-${id}`).textContent = max;
+        
+        const pBadge = document.getElementById(`p-${id}`);
+        pBadge.textContent = displayPercent + "%";
+        
+        const bar = document.getElementById(`b-${id}`);
+        bar.style.width = (percent > 100 ? 100 : percent) + "%";
+
+        pBadge.style.color = (percent < 50) ? 'var(--low)' : (percent < 85) ? 'var(--mid)' : 'var(--high)';
+        bar.className = 'progress-fill ' + (percent < 50 ? 'bg-low' : percent < 85 ? 'bg-mid' : 'bg-high');
+    });
+}
+
+// 3. FUNÇÃO DE SINCRONIZAÇÃO (MANTÉM IGUAL)
 async function uploadToGithub() {
     const token = document.getElementById('gh-token').value;
     const btn = document.getElementById('btn-sync');
-    
-    if (!token) {
-        alert("Por favor, insira o seu Token do GitHub.");
-        return;
-    }
 
-    // Configurações do seu repositório
-    const repo = "felppz/RAMPDOWN"; // ALTERE AQU
-    const path = "data.json";
-    
-    // Organiza os dados atuais para enviar
-    const currentData = {
-        OATS: { 
-            cur: parseFloat(document.getElementById('in-OATS-cur').value) || 0, 
-            max: parseFloat(document.getElementById('in-OATS-max').value) || 0 
-        },
-        SCE: { 
-            cur: parseFloat(document.getElementById('in-SCE-cur').value) || 0, 
-            max: parseFloat(document.getElementById('in-SCE-max').value) || 0 
-        },
-        CRIT1: { 
-            cur: parseFloat(document.getElementById('in-CRIT1-cur').value) || 0, 
-            max: parseFloat(document.getElementById('in-CRIT1-max').value) || 0 
-        }
-    };
+    if (!token) return alert("Erro: Token do GitHub não inserido.");
+    if (REPO_PATH.includes("seu-usuario")) return alert("Erro: Você esqueceu de mudar o REPO_PATH.");
 
-    btn.textContent = "Sincronizando...";
     btn.disabled = true;
+    btn.textContent = "CONECTANDO AO GITHUB...";
+
+    const payload = {};
+    kpiList.forEach(id => {
+        payload[id] = {
+            cur: parseFloat(document.getElementById(`in-${id}-cur`).value) || 0,
+            max: parseFloat(document.getElementById(`in-${id}-max`).value) || 0
+        };
+    });
 
     try {
-        // 1. Pega o SHA do arquivo atual (necessário para o GitHub aceitar a atualização)
-        const getFile = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`);
-        const fileData = await getFile.json();
+        const getUrl = `https://api.github.com/repos/${REPO_PATH}/contents/${FILE_NAME}`;
+        const fileRes = await fetch(getUrl, {
+            headers: { 'Authorization': `token ${token}` }
+        });
+        
+        if (!fileRes.ok) throw new Error("Arquivo data.json não encontrado.");
+        
+        const fileData = await fileRes.json();
         const sha = fileData.sha;
 
-        // 2. Converte o JSON para Base64 (padrão da API do GitHub)
-        const contentBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(currentData, null, 2))));
+        const jsonString = JSON.stringify(payload, null, 2);
+        const contentBase64 = btoa(unescape(encodeURIComponent(jsonString)));
 
-        // 3. Envia a atualização
-        const response = await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
+        const putRes = await fetch(getUrl, {
             method: 'PUT',
             headers: {
                 'Authorization': `token ${token}`,
                 'Content-Type': 'application/json'
             },
             body: JSON.stringify({
-                message: "Update KPIs via Dashboard",
+                message: "Update KPIs",
                 content: contentBase64,
                 sha: sha
             })
         });
 
-        if (response.ok) {
-            alert("✅ Sincronizado! Todos os monitores serão atualizados em instantes.");
+        if (putRes.ok) {
+            alert("✅ SUCESSO: Dados sincronizados globalmente!");
         } else {
-            alert("❌ Erro ao sincronizar. Verifique o Token e o caminho do repositório.");
+            const errData = await putRes.json();
+            alert("❌ ERRO: " + errData.message);
         }
+
     } catch (err) {
-        console.error(err);
-        alert("Falha na conexão com o GitHub.");
+        alert("❌ FALHA: " + err.message);
     } finally {
-        btn.textContent = "SINCRONIZAR COM O GITHUB (GLOBAL)";
         btn.disabled = false;
+        btn.textContent = "ATUALIZAR TODOS OS MONITORES (SINCRONIZAR)";
     }
 }
