@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>RAMPDOWN - Performance Dashboard</title>
+    <title>RAMPDOWN - Global Sync Dashboard</title>
     <style>
         :root {
             --bg: #f0f2f5;
@@ -13,7 +13,6 @@
             --text: #1e293b;
             --muted: #64748b;
             --border: #e2e8f0;
-            /* Cores dos KPIs */
             --low: #ef4444;
             --mid: #f59e0b;
             --high: #10b981;
@@ -22,7 +21,7 @@
         * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
         body { margin: 0; background: var(--bg); color: var(--text); }
 
-        /* HEADER COM LINHAS GRÁFICAS */
+        /* HEADER ANIMADO */
         header {
             background: var(--header);
             color: #fff;
@@ -32,7 +31,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.8);
+            border-bottom: 3px solid var(--primary);
         }
 
         header::after {
@@ -51,215 +50,237 @@
             100% { background-position: -100% 0; }
         }
 
-        .logo-area { position: relative; z-index: 2; font-weight: 800; font-size: 20px; letter-spacing: 1px; }
+        .logo-area { position: relative; z-index: 2; font-weight: 800; font-size: 18px; letter-spacing: 1px; }
 
-        /* LAYOUT */
         .container { max-width: 1100px; margin: 30px auto; padding: 0 20px; }
-        .card { background: var(--card); border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); margin-bottom: 24px; border: 1px solid var(--border); }
-        .card-title { font-weight: 700; font-size: 18px; margin-bottom: 20px; color: var(--text); border-left: 4px solid var(--primary); padding-left: 12px; }
+        
+        .card { background: var(--card); border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid var(--border); margin-bottom: 24px; }
+        .card-title { font-weight: 700; font-size: 18px; margin-bottom: 25px; border-left: 4px solid var(--primary); padding-left: 12px; }
 
         /* GRID DE KPIS */
         .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .kpi-block { background: #fafafa; border: 1px solid var(--border); border-radius: 12px; padding: 20px; transition: transform 0.2s; }
-        .kpi-block:hover { transform: translateY(-3px); }
-        .kpi-name { font-weight: 700; color: var(--muted); font-size: 14px; margin-bottom: 8px; display: block; }
-        .kpi-stats { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; }
-        .kpi-current { font-size: 28px; font-weight: 800; color: var(--header); }
+        .kpi-block { background: #fafafa; border: 1px solid var(--border); border-radius: 12px; padding: 20px; position: relative; }
+        
+        .kpi-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+        .kpi-label { font-weight: 700; color: var(--muted); font-size: 12px; text-transform: uppercase; }
+        
+        .kpi-main-val { display: flex; align-items: baseline; gap: 8px; margin-bottom: 5px; }
+        .kpi-current { font-size: 32px; font-weight: 800; color: var(--header); }
         .kpi-total { color: var(--muted); font-size: 16px; }
 
+        .kpi-percent-badge { font-size: 24px; font-weight: 800; color: var(--primary); }
+
         /* PROGRESS BAR */
-        .progress-bg { background: #e5e7eb; height: 12px; border-radius: 6px; overflow: hidden; position: relative; }
-        .progress-fill { height: 100%; width: 0%; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.3s; }
-        .kpi-percent { display: block; text-align: right; font-weight: 700; font-size: 14px; margin-top: 8px; }
+        .progress-container { background: #e5e7eb; height: 12px; border-radius: 6px; overflow: hidden; margin-top: 10px; }
+        .progress-fill { height: 100%; width: 0%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
 
-        /* CONFIGURAÇÃO */
-        .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-        .input-group { margin-bottom: 15px; }
-        label { display: block; font-size: 13px; font-weight: 600; margin-bottom: 6px; color: var(--muted); }
-        .row-inputs { display: flex; gap: 10px; }
-        input { width: 100%; padding: 10px 14px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; outline: none; }
-        input:focus { border-color: var(--primary); ring: 2px solid rgba(37, 99, 235, 0.1); }
-        .btn { background: var(--primary); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; transition: opacity 0.2s; }
-        .btn:hover { opacity: 0.9; }
-
-        /* DINAMISMO DE CORES */
         .bg-low { background-color: var(--low); }
         .bg-mid { background-color: var(--mid); }
         .bg-high { background-color: var(--high); }
+
+        /* FORMULÁRIO */
+        .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .input-box { display: flex; flex-direction: column; gap: 5px; }
+        .row-inputs { display: flex; gap: 10px; }
+        input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-weight: 600; outline: none; }
+        input:focus { border-color: var(--primary); }
+        
+        .btn { background: #059669; color: white; border: none; padding: 16px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 20px; font-size: 14px; transition: 0.2s; }
+        .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+        .btn:disabled { background: #9ca3af; cursor: not-allowed; }
+
+        .token-section { margin-top: 25px; padding-top: 20px; border-top: 1px dashed var(--border); }
     </style>
 </head>
 <body>
 
 <header>
     <div class="logo-area">RAMPDOWN // PERFORMANCE</div>
-    <div style="z-index: 2; font-size: 12px; opacity: 0.8;">SISTEMA DE GESTÃO INTEGRADA</div>
+    <div style="z-index: 2; font-size: 11px; opacity: 0.7;">SISTEMA DE SINCRONIZAÇÃO GLOBAL</div>
 </header>
 
 <div class="container">
     
     <div class="card">
-        <div class="card-title">Painel de Performance Operacional</div>
+        <div class="card-title">Pré-visualização em Tempo Real</div>
         <div class="kpi-grid">
-            <div class="kpi-block" id="block-OATS">
-                <span class="kpi-name">OATS</span>
-                <div class="kpi-stats">
-                    <span class="kpi-current" id="cur-OATS">0</span>
-                    <span class="kpi-total">/ <span id="max-OATS">0</span></span>
+            <div class="kpi-block">
+                <div class="kpi-header-flex">
+                    <span class="kpi-label">OATS - Global</span>
+                    <span id="p-OATS" class="kpi-percent-badge">0%</span>
                 </div>
-                <div class="progress-bg">
-                    <div id="bar-OATS" class="progress-fill"></div>
+                <div class="kpi-main-val">
+                    <span class="kpi-current" id="v-OATS">0</span>
+                    <span class="kpi-total">/ <span id="m-OATS">0</span></span>
                 </div>
-                <span class="kpi-percent" id="pct-OATS">0%</span>
+                <div class="progress-container">
+                    <div id="b-OATS" class="progress-fill"></div>
+                </div>
             </div>
 
-            <div class="kpi-block" id="block-SCE">
-                <span class="kpi-name">SCE</span>
-                <div class="kpi-stats">
-                    <span class="kpi-current" id="cur-SCE">0</span>
-                    <span class="kpi-total">/ <span id="max-SCE">0</span></span>
+            <div class="kpi-block">
+                <div class="kpi-header-flex">
+                    <span class="kpi-label">SCE - Ciclo</span>
+                    <span id="p-SCE" class="kpi-percent-badge">0%</span>
                 </div>
-                <div class="progress-bg">
-                    <div id="bar-SCE" class="progress-fill"></div>
+                <div class="kpi-main-val">
+                    <span class="kpi-current" id="v-SCE">0</span>
+                    <span class="kpi-total">/ <span id="m-SCE">0</span></span>
                 </div>
-                <span class="kpi-percent" id="pct-SCE">0%</span>
+                <div class="progress-container">
+                    <div id="b-SCE" class="progress-fill"></div>
+                </div>
             </div>
 
-            <div class="kpi-block" id="block-CRIT1">
-                <span class="kpi-name">CRIT #1</span>
-                <div class="kpi-stats">
-                    <span class="kpi-current" id="cur-CRIT1">0</span>
-                    <span class="kpi-total">/ <span id="max-CRIT1">0</span></span>
+            <div class="kpi-block">
+                <div class="kpi-header-flex">
+                    <span class="kpi-label">CRIT #1 - Fator</span>
+                    <span id="p-CRIT1" class="kpi-percent-badge">0%</span>
                 </div>
-                <div class="progress-bg">
-                    <div id="bar-CRIT1" class="progress-fill"></div>
+                <div class="kpi-main-val">
+                    <span class="kpi-current" id="v-CRIT1">0</span>
+                    <span class="kpi-total">/ <span id="m-CRIT1">0</span></span>
                 </div>
-                <span class="kpi-percent" id="pct-CRIT1">0%</span>
+                <div class="progress-container">
+                    <div id="b-CRIT1" class="progress-fill"></div>
+                </div>
             </div>
         </div>
     </div>
 
     <div class="card">
-        <div class="card-title">Configurações de Indicadores</div>
+        <div class="card-title">Painel de Edição de Metas</div>
         <div class="config-grid">
-            <div class="input-group">
+            <div class="input-box">
                 <label>OATS (Atual | Meta)</label>
                 <div class="row-inputs">
-                    <input type="number" id="in-OATS-cur" placeholder="Realizado" oninput="liveUpdate()">
-                    <input type="number" id="in-OATS-max" placeholder="Meta" oninput="liveUpdate()">
+                    <input type="number" id="in-OATS-cur" placeholder="0" oninput="liveCalc()">
+                    <input type="number" id="in-OATS-max" placeholder="0" oninput="liveCalc()">
                 </div>
             </div>
-            <div class="input-group">
+            <div class="input-box">
                 <label>SCE (Atual | Meta)</label>
                 <div class="row-inputs">
-                    <input type="number" id="in-SCE-cur" placeholder="Realizado" oninput="liveUpdate()">
-                    <input type="number" id="in-SCE-max" placeholder="Meta" oninput="liveUpdate()">
+                    <input type="number" id="in-SCE-cur" placeholder="0" oninput="liveCalc()">
+                    <input type="number" id="in-SCE-max" placeholder="0" oninput="liveCalc()">
                 </div>
             </div>
-            <div class="input-group">
+            <div class="input-box">
                 <label>CRIT #1 (Atual | Meta)</label>
                 <div class="row-inputs">
-                    <input type="number" id="in-CRIT1-cur" placeholder="Realizado" oninput="liveUpdate()">
-                    <input type="number" id="in-CRIT1-max" placeholder="Meta" oninput="liveUpdate()">
+                    <input type="number" id="in-CRIT1-cur" placeholder="0" oninput="liveCalc()">
+                    <input type="number" id="in-CRIT1-max" placeholder="0" oninput="liveCalc()">
                 </div>
             </div>
         </div>
-        <div style="margin-top: 10px;">
-            <button class="btn" onclick="saveData()">SALVAR DEFINIÇÕES</button>
+
+        <div class="token-section">
+            <label>GitHub Personal Access Token (PAT)</label>
+            <input type="password" id="gh-token" placeholder="Cole seu token aqui (ghp_...)" style="background: #fffbe6;">
+            <button class="btn" id="btn-sync" onclick="uploadToGithub()">ATUALIZAR TODOS OS MONITORES (SINCRONIZAR)</button>
+            <p style="font-size: 11px; color: var(--muted); margin-top: 10px; text-align: center;">
+                A atualização via API reflete globalmente em todos os terminais conectados ao repositório.
+            </p>
         </div>
     </div>
 
 </div>
 
 <script>
-    const ids = ['OATS', 'SCE', 'CRIT1'];
+    // --- CONFIGURAÇÃO DO REPOSITÓRIO ---
+    const REPO_PATH = "seu-usuario/seu-repositorio"; // ALTERE ISTO
+    const FILE_NAME = "data.json";
+    const kpiList = ['OATS', 'SCE', 'CRIT1'];
 
-    function liveUpdate() {
-        ids.forEach(id => {
+    // Cálculo em tempo real para a prévia visual
+    function liveCalc() {
+        kpiList.forEach(id => {
             const cur = parseFloat(document.getElementById(`in-${id}-cur`).value) || 0;
             const max = parseFloat(document.getElementById(`in-${id}-max`).value) || 0;
             
-            // Atualiza textos do card
-            document.getElementById(`cur-${id}`).textContent = cur;
-            document.getElementById(`max-${id}`).textContent = max;
-            
             let percent = max > 0 ? (cur / max) * 100 : 0;
-            if (percent > 100) percent = 100;
-            
-            document.getElementById(`pct-${id}`).textContent = percent.toFixed(1) + "%";
-            
-            const bar = document.getElementById(`bar-${id}`);
-            bar.style.width = percent + "%";
+            const displayPercent = percent.toFixed(1);
 
-            // Lógica de cores
-            bar.className = "progress-fill"; // reset
-            if (percent < 50) bar.classList.add("bg-low");
-            else if (percent < 85) bar.classList.add("bg-mid");
-            else bar.classList.add("bg-high");
+            document.getElementById(`v-${id}`).textContent = cur;
+            document.getElementById(`m-${id}`).textContent = max;
+            
+            const pBadge = document.getElementById(`p-${id}`);
+            pBadge.textContent = displayPercent + "%";
+            
+            const bar = document.getElementById(`b-${id}`);
+            bar.style.width = (percent > 100 ? 100 : percent) + "%";
+
+            // Cores
+            pBadge.style.color = (percent < 50) ? 'var(--low)' : (percent < 85) ? 'var(--mid)' : 'var(--high)';
+            bar.className = 'progress-fill ' + (percent < 50 ? 'bg-low' : percent < 85 ? 'bg-mid' : 'bg-high');
         });
     }
 
-    function saveData() {
-        const data = {};
-        ids.forEach(id => {
-            data[id] = {
-                cur: document.getElementById(`in-${id}-cur`).value,
-                max: document.getElementById(`in-${id}-max`).value
+    // Função Principal de Sincronização
+    async function uploadToGithub() {
+        const token = document.getElementById('gh-token').value;
+        const btn = document.getElementById('btn-sync');
+
+        if (!token) return alert("Erro: Token do GitHub não inserido.");
+        if (REPO_PATH.includes("seu-usuario")) return alert("Erro: Você esqueceu de mudar o REPO_PATH no código.");
+
+        btn.disabled = true;
+        btn.textContent = "CONECTANDO AO GITHUB...";
+
+        // Captura os dados do formulário
+        const payload = {};
+        kpiList.forEach(id => {
+            payload[id] = {
+                cur: parseFloat(document.getElementById(`in-${id}-cur`).value) || 0,
+                max: parseFloat(document.getElementById(`in-${id}-max`).value) || 0
             };
         });
-        localStorage.setItem('rampdown_kpi_v2', JSON.stringify(data));
-        alert("Configurações salvas no navegador!");
-    }
 
-    function loadData() {
-        const saved = localStorage.getItem('rampdown_kpi_v2');
-        if (saved) {
-            const data = JSON.parse(saved);
-            ids.forEach(id => {
-                if (data[id]) {
-                    document.getElementById(`in-${id}-cur`).value = data[id].cur;
-                    document.getElementById(`in-${id}-max`).value = data[id].max;
-                }
+        try {
+            // 1. Obter o SHA do arquivo existente (obrigatório para PUT)
+            const getUrl = `https://api.github.com/repos/${REPO_PATH}/contents/${FILE_NAME}`;
+            const fileRes = await fetch(getUrl, {
+                headers: { 'Authorization': `token ${token}` }
             });
-            liveUpdate();
+            
+            if (!fileRes.ok) throw new Error("Não foi possível encontrar o arquivo data.json no repositório.");
+            
+            const fileData = await fileRes.json();
+            const sha = fileData.sha;
+
+            // 2. Preparar conteúdo em Base64 (suporta caracteres especiais)
+            const jsonString = JSON.stringify(payload, null, 2);
+            const contentBase64 = btoa(unescape(encodeURIComponent(jsonString)));
+
+            // 3. Enviar atualização
+            const putRes = await fetch(getUrl, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: "Atualização de KPIs operacionais",
+                    content: contentBase64,
+                    sha: sha
+                })
+            });
+
+            if (putRes.ok) {
+                alert("✅ SUCESSO: Dados sincronizados globalmente!");
+            } else {
+                const errData = await putRes.json();
+                alert("❌ ERRO: " + errData.message);
+            }
+
+        } catch (err) {
+            alert("❌ FALHA CRÍTICA: " + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = "ATUALIZAR TODOS OS MONITORES (SINCRONIZAR)";
         }
     }
-
-    // Inicialização
-    window.onload = loadData;
-// ... (mantenha as funções anteriores e adicione estas)
-
-    // Exporta as metas para um arquivo .json
-    function exportConfig() {
-        const saved = localStorage.getItem('rampdown_kpi_v2');
-        if (!saved) return alert("Não há dados para exportar.");
-        
-        const blob = new Blob([saved], { type: "application/json" });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = "rampdown_config.json";
-        a.click();
-    }
-
-    // Importa as metas de um arquivo .json
-    function importConfig(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            try {
-                const content = e.target.result;
-                JSON.parse(content); // Valida se é JSON mesmo
-                localStorage.setItem('rampdown_kpi_v2', content);
-                loadData();
-                alert("Configurações importadas com sucesso!");
-            } catch (err) {
-                alert("Arquivo inválido.");
-            }
-        };
-        reader.readAsText(file);
-    }
 </script>
+
 </body>
 </html>
