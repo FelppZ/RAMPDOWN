@@ -3,284 +3,130 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>RAMPDOWN - Global Sync Dashboard</title>
+    <title>RAMPDOWN // Cloud Sync</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+
     <style>
         :root {
-            --bg: #f0f2f5;
-            --card: #ffffff;
-            --header: #000000;
-            --primary: #2563eb;
-            --text: #1e293b;
-            --muted: #64748b;
-            --border: #e2e8f0;
-            --low: #ef4444;
-            --mid: #f59e0b;
-            --high: #10b981;
+            --bg: #f0f2f5; --card: #ffffff; --header: #1a1a1a;
+            --primary: #2563eb; --low: #ef4444; --mid: #f59e0b; --high: #10b981;
         }
-
-        * { box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
-        body { margin: 0; background: var(--bg); color: var(--text); }
-
-        /* HEADER ANIMADO */
-        header {
-            background: var(--header);
-            color: #fff;
-            padding: 20px;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 3px solid var(--primary);
-        }
-
-        header::after {
-            content: "";
-            position: absolute;
-            top: 0; right: 0; bottom: 0; left: 0;
-            background: 
-                linear-gradient(115deg, transparent 70%, rgba(255,255,255,0.08) 70.5%, rgba(255,255,255,0.08) 72%, transparent 72.5%),
-                linear-gradient(115deg, transparent 75%, rgba(255,255,255,0.05) 75.5%, rgba(255,255,255,0.05) 78%, transparent 78.5%);
-            background-size: 200% 100%;
-            animation: moveLines 8s linear infinite;
-        }
-
-        @keyframes moveLines {
-            0% { background-position: 100% 0; }
-            100% { background-position: -100% 0; }
-        }
-
-        .logo-area { position: relative; z-index: 2; font-weight: 800; font-size: 18px; letter-spacing: 1px; }
-
-        .container { max-width: 1100px; margin: 30px auto; padding: 0 20px; }
-        
-        .card { background: var(--card); border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); border: 1px solid var(--border); margin-bottom: 24px; }
-        .card-title { font-weight: 700; font-size: 18px; margin-bottom: 25px; border-left: 4px solid var(--primary); padding-left: 12px; }
-
-        /* GRID DE KPIS */
-        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; }
-        .kpi-block { background: #fafafa; border: 1px solid var(--border); border-radius: 12px; padding: 20px; position: relative; }
-        
-        .kpi-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-        .kpi-label { font-weight: 700; color: var(--muted); font-size: 12px; text-transform: uppercase; }
-        
-        .kpi-main-val { display: flex; align-items: baseline; gap: 8px; margin-bottom: 5px; }
-        .kpi-current { font-size: 32px; font-weight: 800; color: var(--header); }
-        .kpi-total { color: var(--muted); font-size: 16px; }
-
-        .kpi-percent-badge { font-size: 24px; font-weight: 800; color: var(--primary); }
-
-        /* PROGRESS BAR */
-        .progress-container { background: #e5e7eb; height: 12px; border-radius: 6px; overflow: hidden; margin-top: 10px; }
-        .progress-fill { height: 100%; width: 0%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
-
-        .bg-low { background-color: var(--low); }
-        .bg-mid { background-color: var(--mid); }
-        .bg-high { background-color: var(--high); }
-
-        /* FORMULÁRIO */
-        .config-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-        .input-box { display: flex; flex-direction: column; gap: 5px; }
-        .row-inputs { display: flex; gap: 10px; }
-        input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px; font-weight: 600; outline: none; }
-        input:focus { border-color: var(--primary); }
-        
-        .btn { background: #059669; color: white; border: none; padding: 16px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 20px; font-size: 14px; transition: 0.2s; }
-        .btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
-        .btn:disabled { background: #9ca3af; cursor: not-allowed; }
-
-        .token-section { margin-top: 25px; padding-top: 20px; border-top: 1px dashed var(--border); }
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; background: var(--bg); padding-bottom: 50px; }
+        header { background: var(--header); color: #fff; padding: 20px; text-align: center; border-bottom: 4px solid var(--primary); }
+        .container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
+        .card { background: var(--card); border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 30px; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .kpi-block { background: #fafafa; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; text-align: center; }
+        .kpi-val { font-size: 32px; font-weight: 800; display: block; }
+        .kpi-pct { font-size: 24px; font-weight: 800; margin-bottom: 10px; display: block; }
+        .bar-bg { background: #e5e7eb; height: 12px; border-radius: 6px; overflow: hidden; }
+        .bar-fill { height: 100%; width: 0%; transition: width 0.8s ease-in-out; }
+        .editor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        input { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 5px; }
+        .btn-save { background: #059669; color: white; border: none; padding: 16px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 20px; }
+        .bg-low { background-color: var(--low); } .bg-mid { background-color: var(--mid); } .bg-high { background-color: var(--high); }
     </style>
 </head>
 <body>
 
-<header>
-    <div class="logo-area">RAMPDOWN // PERFORMANCE</div>
-    <div style="z-index: 2; font-size: 11px; opacity: 0.7;">SISTEMA DE SINCRONIZAÇÃO GLOBAL</div>
-</header>
+<header><strong>RAMPDOWN // LIVE REMOTE SYNC</strong></header>
 
 <div class="container">
-    
     <div class="card">
-        <div class="card-title">Pré-visualização em Tempo Real</div>
         <div class="kpi-grid">
-            <div class="kpi-block">
-                <div class="kpi-header-flex">
-                    <span class="kpi-label">OATS - Global</span>
-                    <span id="p-OATS" class="kpi-percent-badge">0%</span>
-                </div>
-                <div class="kpi-main-val">
-                    <span class="kpi-current" id="v-OATS">0</span>
-                    <span class="kpi-total">/ <span id="m-OATS">0</span></span>
-                </div>
-                <div class="progress-container">
-                    <div id="b-OATS" class="progress-fill"></div>
-                </div>
-            </div>
-
-            <div class="kpi-block">
-                <div class="kpi-header-flex">
-                    <span class="kpi-label">SCE - Ciclo</span>
-                    <span id="p-SCE" class="kpi-percent-badge">0%</span>
-                </div>
-                <div class="kpi-main-val">
-                    <span class="kpi-current" id="v-SCE">0</span>
-                    <span class="kpi-total">/ <span id="m-SCE">0</span></span>
-                </div>
-                <div class="progress-container">
-                    <div id="b-SCE" class="progress-fill"></div>
-                </div>
-            </div>
-
-            <div class="kpi-block">
-                <div class="kpi-header-flex">
-                    <span class="kpi-label">CRIT #1 - Fator</span>
-                    <span id="p-CRIT1" class="kpi-percent-badge">0%</span>
-                </div>
-                <div class="kpi-main-val">
-                    <span class="kpi-current" id="v-CRIT1">0</span>
-                    <span class="kpi-total">/ <span id="m-CRIT1">0</span></span>
-                </div>
-                <div class="progress-container">
-                    <div id="b-CRIT1" class="progress-fill"></div>
-                </div>
-            </div>
+            <div class="kpi-block"> OATS <span class="kpi-pct" id="p-OATS">0%</span> <span class="kpi-val" id="v-OATS">0 / 0</span> <div class="bar-bg"><div id="b-OATS" class="bar-fill"></div></div></div>
+            <div class="kpi-block"> SCE <span class="kpi-pct" id="p-SCE">0%</span> <span class="kpi-val" id="v-SCE">0 / 0</span> <div class="bar-bg"><div id="b-SCE" class="bar-fill"></div></div></div>
+            <div class="kpi-block"> CRIT #1 <span class="kpi-pct" id="p-CRIT1">0%</span> <span class="kpi-val" id="v-CRIT1">0 / 0</span> <div class="bar-bg"><div id="b-CRIT1" class="bar-fill"></div></div></div>
         </div>
     </div>
 
     <div class="card">
-        <div class="card-title">Painel de Edição de Metas</div>
-        <div class="config-grid">
-            <div class="input-box">
-                <label>OATS (Atual | Meta)</label>
-                <div class="row-inputs">
-                    <input type="number" id="in-OATS-cur" placeholder="0" oninput="liveCalc()">
-                    <input type="number" id="in-OATS-max" placeholder="0" oninput="liveCalc()">
-                </div>
-            </div>
-            <div class="input-box">
-                <label>SCE (Atual | Meta)</label>
-                <div class="row-inputs">
-                    <input type="number" id="in-SCE-cur" placeholder="0" oninput="liveCalc()">
-                    <input type="number" id="in-SCE-max" placeholder="0" oninput="liveCalc()">
-                </div>
-            </div>
-            <div class="input-box">
-                <label>CRIT #1 (Atual | Meta)</label>
-                <div class="row-inputs">
-                    <input type="number" id="in-CRIT1-cur" placeholder="0" oninput="liveCalc()">
-                    <input type="number" id="in-CRIT1-max" placeholder="0" oninput="liveCalc()">
-                </div>
-            </div>
+        <h3>Painel de Edição Remota</h3>
+        <div class="editor-grid">
+            <div>OATS (Atu/Max) <input type="number" id="in-OATS-cur"> <input type="number" id="in-OATS-max"></div>
+            <div>SCE (Atu/Max) <input type="number" id="in-SCE-cur"> <input type="number" id="in-SCE-max"></div>
+            <div>CRIT (Atu/Max) <input type="number" id="in-CRIT1-cur"> <input type="number" id="in-CRIT1-max"></div>
         </div>
-
-        <div class="token-section">
-            <label>GitHub Personal Access Token (PAT)</label>
-            <input type="password" id="gh-token" placeholder="Cole seu token aqui (ghp_...)" style="background: #fffbe6;">
-            <button class="btn" id="btn-sync" onclick="uploadToGithub()">ATUALIZAR TODOS OS MONITORES (SINCRONIZAR)</button>
-            <p style="font-size: 11px; color: var(--muted); margin-top: 10px; text-align: center;">
-                A atualização via API reflete globalmente em todos os terminais conectados ao repositório.
-            </p>
-        </div>
+        <button class="btn-save" onclick="sendToCloud()">SALVAR E SINCRONIZAR TODAS AS TELAS</button>
     </div>
-
 </div>
 
 <script>
-    // --- CONFIGURAÇÃO DO REPOSITÓRIO ---
-    const REPO_PATH = "felppz/RAMPDOWN"; // ALTERE ISTO
-    const FILE_NAME = "data.json";
-    const kpiList = ['OATS', 'SCE', 'CRIT1'];
+    // --- COLE SUAS CONFIGURAÇÕES DO FIREBASE AQUI ---
+    // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
 
-    // Cálculo em tempo real para a prévia visual
-    function liveCalc() {
-        kpiList.forEach(id => {
-            const cur = parseFloat(document.getElementById(`in-${id}-cur`).value) || 0;
-            const max = parseFloat(document.getElementById(`in-${id}-max`).value) || 0;
-            
-            let percent = max > 0 ? (cur / max) * 100 : 0;
-            const displayPercent = percent.toFixed(1);
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDpowacZTDw8AiOQFK1SOY85x8LyNk1088",
+  authDomain: "rampdown-data.firebaseapp.com",
+  projectId: "rampdown-data",
+  storageBucket: "rampdown-data.firebasestorage.app",
+  messagingSenderId: "971612677227",
+  appId: "1:971612677227:web:74c155f0d5092b96913d2e",
+  measurementId: "G-1DJKW5797D"
+};
 
-            document.getElementById(`v-${id}`).textContent = cur;
-            document.getElementById(`m-${id}`).textContent = max;
-            
-            const pBadge = document.getElementById(`p-${id}`);
-            pBadge.textContent = displayPercent + "%";
-            
-            const bar = document.getElementById(`b-${id}`);
-            bar.style.width = (percent > 100 ? 100 : percent) + "%";
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
 
-            // Cores
-            pBadge.style.color = (percent < 50) ? 'var(--low)' : (percent < 85) ? 'var(--mid)' : 'var(--high)';
-            bar.className = 'progress-fill ' + (percent < 50 ? 'bg-low' : percent < 85 ? 'bg-mid' : 'bg-high');
-        });
-    }
+    // Inicialização
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const kpis = ['OATS', 'SCE', 'CRIT1'];
 
-    // Função Principal de Sincronização
-    async function uploadToGithub() {
-        const token = document.getElementById('gh-token').value;
-        const btn = document.getElementById('btn-sync');
+    /**
+     * ESCUTADOR REMOTO: Sempre que alguém mudar no banco, 
+     * o computador do display atualiza SOZINHO sem refresh.
+     */
+    db.ref('dashboard_live').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            kpis.forEach(id => {
+                const cur = data[id].cur; const max = data[id].max;
+                const pct = max > 0 ? (cur / max) * 100 : 0;
 
-        if (!token) return alert("Erro: Token do GitHub não inserido.");
-        if (REPO_PATH.includes("seu-usuario")) return alert("Erro: Você esqueceu de mudar o REPO_PATH no código.");
+                // Atualiza Display
+                document.getElementById(`v-${id}`).textContent = `${cur} / ${max}`;
+                document.getElementById(`p-${id}`).textContent = `${pct.toFixed(1)}%`;
+                document.getElementById(`b-${id}`).style.width = (pct > 100 ? 100 : pct) + "%";
+                
+                // Cores
+                const color = pct < 50 ? 'var(--low)' : pct < 85 ? 'var(--mid)' : 'var(--high)';
+                document.getElementById(`b-${id}`).style.backgroundColor = color;
+                document.getElementById(`p-${id}`).style.color = color;
 
-        btn.disabled = true;
-        btn.textContent = "CONECTANDO AO GITHUB...";
+                // Preenche os inputs do Editor (para manter sincronizado)
+                document.getElementById(`in-${id}-cur`).value = cur;
+                document.getElementById(`in-${id}-max`).value = max;
+            });
+        }
+    });
 
-        // Captura os dados do formulário
+    /**
+     * ENVIAR: Pega o que você digitou e joga na nuvem
+     */
+    function sendToCloud() {
         const payload = {};
-        kpiList.forEach(id => {
+        kpis.forEach(id => {
             payload[id] = {
                 cur: parseFloat(document.getElementById(`in-${id}-cur`).value) || 0,
                 max: parseFloat(document.getElementById(`in-${id}-max`).value) || 0
             };
         });
 
-        try {
-            // 1. Obter o SHA do arquivo existente (obrigatório para PUT)
-            const getUrl = `https://api.github.com/repos/${REPO_PATH}/contents/${FILE_NAME}`;
-            const fileRes = await fetch(getUrl, {
-                headers: { 'Authorization': `token ${token}` }
-            });
-            
-            if (!fileRes.ok) throw new Error("Não foi possível encontrar o arquivo data.json no repositório.");
-            
-            const fileData = await fileRes.json();
-            const sha = fileData.sha;
-
-            // 2. Preparar conteúdo em Base64 (suporta caracteres especiais)
-            const jsonString = JSON.stringify(payload, null, 2);
-            const contentBase64 = btoa(unescape(encodeURIComponent(jsonString)));
-
-            // 3. Enviar atualização
-            const putRes = await fetch(getUrl, {
-                method: 'PUT',
-                headers: {
-                    'Authorization': `token ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    message: "Atualização de KPIs operacionais",
-                    content: contentBase64,
-                    sha: sha
-                })
-            });
-
-            if (putRes.ok) {
-                alert("✅ SUCESSO: Dados sincronizados globalmente!");
-            } else {
-                const errData = await putRes.json();
-                alert("❌ ERRO: " + errData.message);
-            }
-
-        } catch (err) {
-            alert("❌ FALHA CRÍTICA: " + err.message);
-        } finally {
-            btn.disabled = false;
-            btn.textContent = "ATUALIZAR TODOS OS MONITORES (SINCRONIZAR)";
-        }
+        db.ref('dashboard_live').set(payload)
+            .then(() => alert("Sincronizado!"))
+            .catch(e => alert("Erro ao sincronizar."));
     }
 </script>
-
 </body>
 </html>
