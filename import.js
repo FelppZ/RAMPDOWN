@@ -1,5 +1,5 @@
 // --- CONFIGURAÇÃO DO REPOSITÓRIO (OBRIGATÓRIO ALTERAR) ---
-const REPO_PATH = "seu-usuario/seu-repositorio"; // Exemplo: "joaosilva/dashboard-kpi"
+const REPO_PATH = "felppz/RAMPDOWN"; // Exemplo: "joaosilva/dashboard-kpi"
 const FILE_NAME = "data.json";
 const kpiList = ['OATS', 'SCE', 'CRIT1'];
 
