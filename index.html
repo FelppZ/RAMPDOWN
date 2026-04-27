@@ -3,59 +3,175 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>RAMPDOWN // Cloud Sync</title>
+    <title>RAMPDOWN // Operacional</title>
     
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
     <style>
         :root {
-            --bg: #f0f2f5; --card: #ffffff; --header: #1a1a1a;
-            --primary: #2563eb; --low: #ef4444; --mid: #f59e0b; --high: #10b981;
+            --bg: #0f172a;
+            --card: #1e293b;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --primary: #3b82f6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --border: #334155;
         }
-        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
-        body { margin: 0; background: var(--bg); padding-bottom: 50px; }
-        header { background: var(--header); color: #fff; padding: 20px; text-align: center; border-bottom: 4px solid var(--primary); }
-        .container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
-        .card { background: var(--card); border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 30px; }
-        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
-        .kpi-block { background: #fafafa; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; text-align: center; }
-        .kpi-val { font-size: 32px; font-weight: 800; display: block; }
-        .kpi-pct { font-size: 24px; font-weight: 800; margin-bottom: 10px; display: block; }
-        .bar-bg { background: #e5e7eb; height: 12px; border-radius: 6px; overflow: hidden; }
-        .bar-fill { height: 100%; width: 0%; transition: width 0.8s ease-in-out; }
-        .editor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
-        input { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 5px; }
-        .btn-save { background: #059669; color: white; border: none; padding: 16px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 20px; }
-        .bg-low { background-color: var(--low); } .bg-mid { background-color: var(--mid); } .bg-high { background-color: var(--high); }
+
+        * { box-sizing: border-box; font-family: 'Inter', 'Segoe UI', sans-serif; }
+        body { margin: 0; background: var(--bg); color: var(--text-main); padding: 20px; }
+
+        .container { max-width: 1200px; margin: 0 auto; }
+
+        /* HEADER */
+        header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            padding-bottom: 30px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 30px;
+        }
+        h1 { margin: 0; font-size: 1.5rem; letter-spacing: -0.5px; font-weight: 800; color: var(--primary); }
+
+        /* KPI CARDS */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 24px; }
+        .card { 
+            background: var(--card); 
+            border: 1px solid var(--border); 
+            border-radius: 20px; 
+            padding: 24px; 
+            transition: transform 0.2s;
+        }
+
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        .label { color: var(--text-dim); font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        .percentage { font-size: 2rem; font-weight: 800; line-height: 1; }
+
+        .value-text { font-size: 1rem; color: var(--text-dim); margin-bottom: 20px; display: block; }
+        .value-text strong { color: var(--text-main); font-size: 1.2rem; }
+
+        .bar-container { background: #334155; height: 10px; border-radius: 5px; overflow: hidden; }
+        .bar-fill { height: 100%; width: 0%; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.5s; }
+
+        /* EDITOR PANEL */
+        .editor-panel { 
+            margin-top: 50px; 
+            background: #111827; 
+            border-radius: 20px; 
+            padding: 30px;
+            border: 1px dashed var(--border);
+        }
+        .editor-title { font-size: 1rem; font-weight: 700; margin-bottom: 20px; color: var(--text-dim); display: flex; align-items: center; gap: 10px; }
+        
+        .inputs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+        .input-group { display: flex; flex-direction: column; gap: 8px; }
+        .input-pair { display: flex; gap: 10px; }
+        
+        input { 
+            background: #1e293b; 
+            border: 1px solid var(--border); 
+            color: white; 
+            padding: 12px; 
+            border-radius: 10px; 
+            width: 100%;
+            font-weight: 600;
+            outline: none;
+        }
+        input:focus { border-color: var(--primary); }
+
+        .btn-sync { 
+            background: var(--primary); 
+            color: white; 
+            border: none; 
+            padding: 15px 30px; 
+            border-radius: 12px; 
+            font-weight: 700; 
+            cursor: pointer; 
+            margin-top: 25px;
+            width: 100%;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .btn-sync:active { transform: scale(0.98); }
+        .btn-sync.saved { background: var(--success); }
+
     </style>
 </head>
 <body>
 
-<header><strong>RAMPDOWN // LIVE REMOTE SYNC</strong></header>
-
 <div class="container">
-    <div class="card">
-        <div class="kpi-grid">
-            <div class="kpi-block"> OATS <span class="kpi-pct" id="p-OATS">0%</span> <span class="kpi-val" id="v-OATS">0 / 0</span> <div class="bar-bg"><div id="b-OATS" class="bar-fill"></div></div></div>
-            <div class="kpi-block"> SCE <span class="kpi-pct" id="p-SCE">0%</span> <span class="kpi-val" id="v-SCE">0 / 0</span> <div class="bar-bg"><div id="b-SCE" class="bar-fill"></div></div></div>
-            <div class="kpi-block"> CRIT #1 <span class="kpi-pct" id="p-CRIT1">0%</span> <span class="kpi-val" id="v-CRIT1">0 / 0</span> <div class="bar-bg"><div id="b-CRIT1" class="bar-fill"></div></div></div>
+    <header>
+        <h1>RAMPDOWN // CORE</h1>
+        <div id="sync-status" style="font-size: 0.7rem; color: var(--success); display: flex; align-items: center; gap: 5px;">
+            <div style="width: 8px; height: 8px; background: currentColor; border-radius: 50%;"></div>
+            SISTEMA AO VIVO
+        </div>
+    </header>
+
+    <div class="kpi-grid">
+        <div class="card">
+            <div class="card-header">
+                <span class="label">Eficiência OATS</span>
+                <span class="percentage" id="p-OATS">0%</span>
+            </div>
+            <span class="value-text">Atual: <strong id="v-OATS">0 / 0</strong></span>
+            <div class="bar-container"><div id="b-OATS" class="bar-fill"></div></div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="label">Ciclo SCE</span>
+                <span class="percentage" id="p-SCE">0%</span>
+            </div>
+            <span class="value-text">Atual: <strong id="v-SCE">0 / 0</strong></span>
+            <div class="bar-container"><div id="b-SCE" class="bar-fill"></div></div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">
+                <span class="label">Fator Crítico</span>
+                <span class="percentage" id="p-CRIT1">0%</span>
+            </div>
+            <span class="value-text">Atual: <strong id="v-CRIT1">0 / 0</strong></span>
+            <div class="bar-container"><div id="b-CRIT1" class="bar-fill"></div></div>
         </div>
     </div>
 
-    <div class="card">
-        <h3>Painel de Edição Remota</h3>
-        <div class="editor-grid">
-            <div>OATS (Atu/Max) <input type="number" id="in-OATS-cur"> <input type="number" id="in-OATS-max"></div>
-            <div>SCE (Atu/Max) <input type="number" id="in-SCE-cur"> <input type="number" id="in-SCE-max"></div>
-            <div>CRIT (Atu/Max) <input type="number" id="in-CRIT1-cur"> <input type="number" id="in-CRIT1-max"></div>
+    <div class="editor-panel">
+        <div class="editor-title">CONSOLE DE ATUALIZAÇÃO</div>
+        <div class="inputs-grid">
+            <div class="input-group">
+                <span class="label">OATS (Cur / Max)</span>
+                <div class="input-pair">
+                    <input type="number" id="in-OATS-cur" placeholder="0">
+                    <input type="number" id="in-OATS-max" placeholder="0">
+                </div>
+            </div>
+            <div class="input-group">
+                <span class="label">SCE (Cur / Max)</span>
+                <div class="input-pair">
+                    <input type="number" id="in-SCE-cur" placeholder="0">
+                    <input type="number" id="in-SCE-max" placeholder="0">
+                </div>
+            </div>
+            <div class="input-group">
+                <span class="label">CRIT 1 (Cur / Max)</span>
+                <div class="input-pair">
+                    <input type="number" id="in-CRIT1-cur" placeholder="0">
+                    <input type="number" id="in-CRIT1-max" placeholder="0">
+                </div>
+            </div>
         </div>
-        <button class="btn-save" onclick="sendToCloud()">SALVAR E SINCRONIZAR TODAS AS TELAS</button>
+        <button class="btn-sync" id="btn-save" onclick="sendToCloud()">Atualizar Indicadores</button>
     </div>
 </div>
 
 <script>
-    // --- COLE SUAS CONFIGURAÇÕES DO FIREBASE AQUI ---
     // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
 import { getAnalytics } from "firebase/analytics";
@@ -78,44 +194,43 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
 
-    // Inicialização
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const kpis = ['OATS', 'SCE', 'CRIT1'];
 
-    /**
-     * ESCUTADOR REMOTO: Sempre que alguém mudar no banco, 
-     * o computador do display atualiza SOZINHO sem refresh.
-     */
+    // SINCRONIZAÇÃO SILENCIOSA (RECEBER)
     db.ref('dashboard_live').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
             kpis.forEach(id => {
-                const cur = data[id].cur; const max = data[id].max;
+                const cur = data[id].cur;
+                const max = data[id].max;
                 const pct = max > 0 ? (cur / max) * 100 : 0;
 
-                // Atualiza Display
+                // Dashboard
                 document.getElementById(`v-${id}`).textContent = `${cur} / ${max}`;
-                document.getElementById(`p-${id}`).textContent = `${pct.toFixed(1)}%`;
-                document.getElementById(`b-${id}`).style.width = (pct > 100 ? 100 : pct) + "%";
+                document.getElementById(`p-${id}`).textContent = `${Math.floor(pct)}%`;
                 
-                // Cores
-                const color = pct < 50 ? 'var(--low)' : pct < 85 ? 'var(--mid)' : 'var(--high)';
-                document.getElementById(`b-${id}`).style.backgroundColor = color;
+                const bar = document.getElementById(`b-${id}`);
+                bar.style.width = (pct > 100 ? 100 : pct) + "%";
+                
+                // Cores dinâmicas (Variables)
+                const color = pct < 50 ? '#ef4444' : pct < 85 ? '#f59e0b' : '#10b981';
+                bar.style.backgroundColor = color;
                 document.getElementById(`p-${id}`).style.color = color;
 
-                // Preenche os inputs do Editor (para manter sincronizado)
-                document.getElementById(`in-${id}-cur`).value = cur;
-                document.getElementById(`in-${id}-max`).value = max;
+                // Inputs (Preenche apenas se estiverem vazios ou para sincronizar máquinas)
+                if (document.activeElement.id !== `in-${id}-cur`) document.getElementById(`in-${id}-cur`).value = cur;
+                if (document.activeElement.id !== `in-${id}-max`) document.getElementById(`in-${id}-max`).value = max;
             });
         }
     });
 
-    /**
-     * ENVIAR: Pega o que você digitou e joga na nuvem
-     */
+    // SINCRONIZAÇÃO SILENCIOSA (ENVIAR)
     function sendToCloud() {
+        const btn = document.getElementById('btn-save');
         const payload = {};
+        
         kpis.forEach(id => {
             payload[id] = {
                 cur: parseFloat(document.getElementById(`in-${id}-cur`).value) || 0,
@@ -123,10 +238,24 @@ const analytics = getAnalytics(app);
             };
         });
 
+        // Feedback visual no botão em vez de alert()
+        btn.textContent = "SINCRONIZANDO...";
+        
         db.ref('dashboard_live').set(payload)
-            .then(() => alert("Sincronizado!"))
-            .catch(e => alert("Erro ao sincronizar."));
+            .then(() => {
+                btn.classList.add('saved');
+                btn.textContent = "DADOS ATUALIZADOS";
+                setTimeout(() => {
+                    btn.classList.remove('saved');
+                    btn.textContent = "Atualizar Indicadores";
+                }, 2000);
+            })
+            .catch(() => {
+                btn.style.background = '#ef4444';
+                btn.textContent = "ERRO NA CONEXÃO";
+            });
     }
 </script>
+
 </body>
 </html>
