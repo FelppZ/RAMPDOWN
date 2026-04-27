@@ -1,116 +1,132 @@
-// --- CONFIGURAÇÃO (AJUSTE AQUI) ---
-const REPO_PATH = "felppz/RAMPDOWN"; // Ex: "joao/projeto-kpi"
-const FILE_NAME = "data.json";
-const kpiList = ['OATS', 'SCE', 'CRIT1'];
-
-/**
- * 1. CARGA INICIAL (Híbrida: Local + Nuvem)
- */
-async function loadCurrentData() {
-    // Primeiro, tenta carregar do navegador (rápido e evita campos vazios)
-    const localData = localStorage.getItem('rampdown_backup');
-    if (localData) {
-        fillFields(JSON.parse(localData));
-        console.log("Dados carregados do cache local.");
-    }
-
-    // Depois, tenta buscar a versão oficial do GitHub para garantir que está atualizado
-    try {
-        const response = await fetch(`https://raw.githubusercontent.com/${REPO_PATH}/main/${FILE_NAME}?t=${new Date().getTime()}`);
-        if (response.ok) {
-            const remoteData = await response.json();
-            fillFields(remoteData);
-            // Atualiza o backup local com o que veio da nuvem
-            localStorage.setItem('rampdown_backup', JSON.stringify(remoteData));
-            console.log("Dados sincronizados com o GitHub.");
-        }
-    } catch (err) {
-        console.warn("Não foi possível sincronizar com a nuvem, usando dados locais.");
-    }
-}
-
-// Função auxiliar para preencher os campos
-function fillFields(data) {
-    kpiList.forEach(id => {
-        if (data[id]) {
-            document.getElementById(`in-${id}-cur`).value = data[id].cur;
-            document.getElementById(`in-${id}-max`).value = data[id].max;
-        }
-    });
-    liveCalc(); // Atualiza as barras e %
-}
-
-/**
- * 2. CÁLCULO EM TEMPO REAL
- */
-function liveCalc() {
-    kpiList.forEach(id => {
-        const cur = parseFloat(document.getElementById(`in-${id}-cur`).value) || 0;
-        const max = parseFloat(document.getElementById(`in-${id}-max`).value) || 0;
-        
-        let percent = max > 0 ? (cur / max) * 100 : 0;
-        
-        document.getElementById(`v-${id}`).textContent = cur;
-        document.getElementById(`m-${id}`).textContent = max;
-        document.getElementById(`p-${id}`).textContent = percent.toFixed(1) + "%";
-        
-        const bar = document.getElementById(`b-${id}`);
-        bar.style.width = (percent > 100 ? 100 : percent) + "%";
-        bar.className = 'progress-fill ' + (percent < 50 ? 'bg-low' : percent < 85 ? 'bg-mid' : 'bg-high');
-        document.getElementById(`p-${id}`).style.color = (percent < 50) ? 'var(--low)' : (percent < 85) ? 'var(--mid)' : 'var(--high)';
-    });
-}
-
-/**
- * 3. SINCRONIZAR (SALVAR NO GITHUB)
- */
-async function uploadToGithub() {
-    const token = document.getElementById('gh-token').value;
-    const btn = document.getElementById('btn-sync');
-
-    if (!token) return alert("⚠️ Insira o Token do GitHub.");
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RAMPDOWN // Cloud Sync</title>
     
-    btn.disabled = true;
-    btn.textContent = "SALVANDO...";
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
 
-    const payload = {};
-    kpiList.forEach(id => {
-        payload[id] = {
-            cur: parseFloat(document.getElementById(`in-${id}-cur`).value) || 0,
-            max: parseFloat(document.getElementById(`in-${id}-max`).value) || 0
-        };
+    <style>
+        :root {
+            --bg: #f0f2f5; --card: #ffffff; --header: #1a1a1a;
+            --primary: #2563eb; --low: #ef4444; --mid: #f59e0b; --high: #10b981;
+        }
+        * { box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { margin: 0; background: var(--bg); padding-bottom: 50px; }
+        header { background: var(--header); color: #fff; padding: 20px; text-align: center; border-bottom: 4px solid var(--primary); }
+        .container { max-width: 1000px; margin: 30px auto; padding: 0 20px; }
+        .card { background: var(--card); border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 30px; }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+        .kpi-block { background: #fafafa; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; text-align: center; }
+        .kpi-val { font-size: 32px; font-weight: 800; display: block; }
+        .kpi-pct { font-size: 24px; font-weight: 800; margin-bottom: 10px; display: block; }
+        .bar-bg { background: #e5e7eb; height: 12px; border-radius: 6px; overflow: hidden; }
+        .bar-fill { height: 100%; width: 0%; transition: width 0.8s ease-in-out; }
+        .editor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
+        input { width: 100%; padding: 12px; border: 1px solid #e2e8f0; border-radius: 8px; margin-top: 5px; }
+        .btn-save { background: #059669; color: white; border: none; padding: 16px; border-radius: 8px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 20px; }
+        .bg-low { background-color: var(--low); } .bg-mid { background-color: var(--mid); } .bg-high { background-color: var(--high); }
+    </style>
+</head>
+<body>
+
+<header><strong>RAMPDOWN // LIVE REMOTE SYNC</strong></header>
+
+<div class="container">
+    <div class="card">
+        <div class="kpi-grid">
+            <div class="kpi-block"> OATS <span class="kpi-pct" id="p-OATS">0%</span> <span class="kpi-val" id="v-OATS">0 / 0</span> <div class="bar-bg"><div id="b-OATS" class="bar-fill"></div></div></div>
+            <div class="kpi-block"> SCE <span class="kpi-pct" id="p-SCE">0%</span> <span class="kpi-val" id="v-SCE">0 / 0</span> <div class="bar-bg"><div id="b-SCE" class="bar-fill"></div></div></div>
+            <div class="kpi-block"> CRIT #1 <span class="kpi-pct" id="p-CRIT1">0%</span> <span class="kpi-val" id="v-CRIT1">0 / 0</span> <div class="bar-bg"><div id="b-CRIT1" class="bar-fill"></div></div></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3>Painel de Edição Remota</h3>
+        <div class="editor-grid">
+            <div>OATS (Atu/Max) <input type="number" id="in-OATS-cur"> <input type="number" id="in-OATS-max"></div>
+            <div>SCE (Atu/Max) <input type="number" id="in-SCE-cur"> <input type="number" id="in-SCE-max"></div>
+            <div>CRIT (Atu/Max) <input type="number" id="in-CRIT1-cur"> <input type="number" id="in-CRIT1-max"></div>
+        </div>
+        <button class="btn-save" onclick="sendToCloud()">SALVAR E SINCRONIZAR TODAS AS TELAS</button>
+    </div>
+</div>
+
+<script>
+    // --- COLE SUAS CONFIGURAÇÕES DO FIREBASE AQUI ---
+    // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyDpowacZTDw8AiOQFK1SOY85x8LyNk1088",
+  authDomain: "rampdown-data.firebaseapp.com",
+  projectId: "rampdown-data",
+  storageBucket: "rampdown-data.firebasestorage.app",
+  messagingSenderId: "971612677227",
+  appId: "1:971612677227:web:74c155f0d5092b96913d2e",
+  measurementId: "G-1DJKW5797D"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+
+    // Inicialização
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const kpis = ['OATS', 'SCE', 'CRIT1'];
+
+    /**
+     * ESCUTADOR REMOTO: Sempre que alguém mudar no banco, 
+     * o computador do display atualiza SOZINHO sem refresh.
+     */
+    db.ref('dashboard_live').on('value', (snapshot) => {
+        const data = snapshot.val();
+        if (data) {
+            kpis.forEach(id => {
+                const cur = data[id].cur; const max = data[id].max;
+                const pct = max > 0 ? (cur / max) * 100 : 0;
+
+                // Atualiza Display
+                document.getElementById(`v-${id}`).textContent = `${cur} / ${max}`;
+                document.getElementById(`p-${id}`).textContent = `${pct.toFixed(1)}%`;
+                document.getElementById(`b-${id}`).style.width = (pct > 100 ? 100 : pct) + "%";
+                
+                // Cores
+                const color = pct < 50 ? 'var(--low)' : pct < 85 ? 'var(--mid)' : 'var(--high)';
+                document.getElementById(`b-${id}`).style.backgroundColor = color;
+                document.getElementById(`p-${id}`).style.color = color;
+
+                // Preenche os inputs do Editor (para manter sincronizado)
+                document.getElementById(`in-${id}-cur`).value = cur;
+                document.getElementById(`in-${id}-max`).value = max;
+            });
+        }
     });
 
-    // Salva no navegador IMEDIATAMENTE
-    localStorage.setItem('rampdown_backup', JSON.stringify(payload));
-
-    try {
-        const getUrl = `https://api.github.com/repos/${REPO_PATH}/contents/${FILE_NAME}`;
-        const fileRes = await fetch(getUrl, { headers: { 'Authorization': `token ${token}` } });
-        
-        if (!fileRes.ok) throw new Error("Arquivo não encontrado no GitHub.");
-        
-        const fileData = await fileRes.json();
-        const sha = fileData.sha;
-        const contentBase64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
-
-        const putRes = await fetch(getUrl, {
-            method: 'PUT',
-            headers: { 'Authorization': `token ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: "Update KPIs", content: contentBase64, sha: sha })
+    /**
+     * ENVIAR: Pega o que você digitou e joga na nuvem
+     */
+    function sendToCloud() {
+        const payload = {};
+        kpis.forEach(id => {
+            payload[id] = {
+                cur: parseFloat(document.getElementById(`in-${id}-cur`).value) || 0,
+                max: parseFloat(document.getElementById(`in-${id}-max`).value) || 0
+            };
         });
 
-        if (putRes.ok) {
-            alert("✅ Salvo com sucesso no GitHub e no Navegador!");
-        } else {
-            alert("❌ Erro ao salvar no GitHub, mas os dados foram mantidos neste computador.");
-        }
-    } catch (err) {
-        alert("❌ Falha de conexão: Os dados ficaram salvos apenas neste computador por enquanto.");
-    } finally {
-        btn.disabled = false;
-        btn.textContent = "ATUALIZAR TODOS OS MONITORES (SINCRONIZAR)";
+        db.ref('dashboard_live').set(payload)
+            .then(() => alert("Sincronizado!"))
+            .catch(e => alert("Erro ao sincronizar."));
     }
-}
-
-window.onload = loadCurrentData;
+</script>
+</body>
+</html>
