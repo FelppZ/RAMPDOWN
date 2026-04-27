@@ -1,14 +1,14 @@
 {
   "OATS": {
-    "cur": 200,
-    "max": 500
+    "cur": 0,
+    "max": 0
   },
   "SCE": {
     "cur": 0,
     "max": 0
   },
   "CRIT1": {
-    "cur": 0,
-    "max": 0
+    "cur": 80,
+    "max": 789
   }
 }
