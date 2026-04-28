@@ -42,8 +42,6 @@
 
         #bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.3; z-index: 1; }
 
-        
-
         .header-content {
             position: relative;
             z-index: 2;
@@ -181,7 +179,19 @@
             padding: 12px; border: 1px solid #ddd; 
             border-radius: 4px; width: 100%; outline: none; 
         }
-
+.section-results-title {
+    font-family: var(--font-bold);
+    font-size: 1.6rem;         /* Tamanho de destaque */
+    color: #1a1a1a;            /* Cinza escuro profissional */
+    text-transform: uppercase;
+    letter-spacing: 4px;       /* Espaçamento extra para ar moderno */
+    margin-top: 40px;          /* Espaço em relação ao header */
+    margin-bottom: 0.8px;       /* Espaço em relação aos cards */
+    padding-left: 10px;        /* Alinhamento com o início dos cards */
+    display: block;
+    border-bottom: 0.2px solid #f0f0f0; /* Linha sutil embaixo para separar */
+    padding-bottom: 1   px;
+}
         .btn-sync { 
             background: var(--tech-black); color: white; border: none; 
             padding: 20px; font-family: var(--font-bold); 
@@ -210,7 +220,16 @@
         </div>
     </div>
 </header>
+</header>
 
+<main class="container">
+    <h1 id="main-results-title" class="section-results-title">
+        LOADING RESULTS
+    </h1>
+
+    <div class="kpi-grid">
+        </div>
+</main>
 <div class="container">
     <div class="kpi-grid">
         <div class="card">
@@ -297,7 +316,23 @@
         requestAnimationFrame(draw);
     }
     init(); draw();
+function configurarTituloDinamico() {
+    const mesesIngles = [
+        "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
+        "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"
+    ];
 
+    const data = new Date();
+    const mesAtual = mesesIngles[data.getMonth()];
+    
+    const elementoTitulo = document.getElementById('main-results-title');
+    if (elementoTitulo) {
+        elementoTitulo.textContent = `${mesAtual} RESULTS`;
+    }
+}
+
+// Chama a função assim que a página carregar
+window.onload = configurarTituloDinamico;
     // 2. SENHA
     function checkPass() {
         if(prompt("Senha:") === "Fab222324") {
