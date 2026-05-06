@@ -3,14 +3,15 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>RAMPDOWN</title>
+    <title>RAMPDOWN DASHBOARD</title>
     <link rel="icon" type="image/png" href="https://logosandtypes.com/wp-content/uploads/2025/05/MODEC-scaled.png">
     
+    <!-- Scripts Firebase e Gráficos -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
-        /* CONFIGURAÇÃO DE FONTES BAHNSCHRIFT */
         :root {
             --tech-black: #000000;
             --pure-white: #ffffff;
@@ -26,9 +27,9 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: var(--pure-white); color: var(--text-dark); min-height: 100vh; font-family: var(--font-light); }
+        body { background: #fcfcfc; color: var(--text-dark); min-height: 100vh; font-family: var(--font-light); }
 
-        /* HEADER ANIMADO PRETO */
+        /* HEADER */
         header {
             position: relative;
             background: var(--tech-black);
@@ -39,167 +40,106 @@
             overflow: hidden;
             z-index: 10;
         }
-
         #bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.3; z-index: 1; }
-
-        .header-content {
-            position: relative;
-            z-index: 2;
-            display: flex;
-            justify-content: space-between;
-            width: 100%;
-            align-items: center;
-        }
-
+        .header-content { position: relative; z-index: 2; display: flex; justify-content: space-between; width: 100%; align-items: center; }
         .logo-section { display: flex; align-items: center; gap: 20px; }
         .logo-section img { height: 45px; }
+        .v-line { width: 2px; height: 35px; background: #fff; }
+        .program-title { font-family: var(--font-bold); font-size: 1.4rem; color: #fff; line-height: 1; }
+        .subtitle { font-size: 0.75rem; color: rgba(255, 255, 255, 0.6); margin-top: 4px; letter-spacing: 0.5px; }
         
-        /* Linha vertical ao lado da logo */
-        .v-line { width: 2px; height: 35px; background: rgba(255, 255, 255, 1); }
-
-        /* Garante que os textos fiquem um embaixo do outro e centralizados com a logo */
-.title-group {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-}
-
-.program-title {
-    font-family: var(--font-bold);
-    font-size: 1.4rem;
-    color: #fff;
-    line-height: 1; /* Reduz o espaço para o subtítulo chegar mais perto */
-}
-
-.subtitle {
-    font-family: var(--font-light);
-    font-size: 0.75rem;
-    color: rgba(255, 255, 255, 0.6); /* Branco suave para não ofuscar o título */
-    margin-top: 4px;
-    letter-spacing: 0.5px;
-}
-
-        #sync-status { 
-            font-family: var(--font-bold); 
-            font-size: 0.7rem; 
-            display: flex; 
-            align-items: center; 
-            gap: 8px; 
-        }
+        #sync-status { font-family: var(--font-bold); font-size: 0.7rem; display: flex; align-items: center; gap: 8px; }
         .dot { width: 8px; height: 8px; border-radius: 50%; background: #444; }
-        .online { color: var(--success); } 
-        .online .dot { background: var(--success); box-shadow: 0 0 10px var(--success); }
+        .online { color: var(--success); } .online .dot { background: var(--success); box-shadow: 0 0 10px var(--success); }
+        .offline { color: var(--danger); } .offline .dot { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
 
-        /* DASHBOARD MINIMALISTA BRANCO */
-        .container { max-width: 1300px; margin: 60px auto; padding: 0 40px; }
+        /* DASHBOARD GRID */
+        .container { max-width: 1300px; margin: 40px auto; padding: 0 40px; }
+        .section-results-title { 
+            font-family: var(--font-bold); font-size: 1.6rem; color: #1a1a1a; 
+            text-transform: uppercase; letter-spacing: 4px; margin-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0; padding-bottom: 10px;
+        }
 
-        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 40px; }
-        
+        .kpi-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); 
+            gap: 30px; 
+            align-items: start; /* CORREÇÃO: Impede que os cards estiquem juntos na mesma linha */
+        }
+
+        /* CARDS */
         .card { 
+            position: relative; 
             background: var(--pure-white); 
             padding: 35px; 
-            border-radius: 20px; /* Cantos mais arredondados */
+            border-radius: 20px; 
             border: 1px solid #f0f0f0;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03); /* Sombra inicial leve */
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            transition: transform 0.3s ease, box-shadow 0.3s ease; /* Transições suaves */
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 12px 30px rgba(0,0,0,0.08); }
 
-        /* Animação ao passar o mouse */
-        .card:hover {
-            transform: translateY(-8px); /* Eleva o card */
-            box-shadow: 0 12px 30px rgba(0,0,0,0.1); /* Sombra mais difusa e escura */
+        .card-button {
+            position: absolute; top: 25px; right: 20px; z-index: 10;
+            padding: 6px 12px; background: #fff; border: 1.5px solid #000;
+            border-radius: 6px; font-family: var(--font-bold); font-size: 0.65rem;
+            cursor: pointer; transition: all 0.3s ease;
         }
+        .card-button:hover { background: #000; color: #fff; }
 
-        .card-title { 
-            font-family: var(--font-bold); 
-            font-size: 1.1rem; 
-            color: var(--text-dark); 
-            text-transform: uppercase;
-            margin-bottom: 30px;
-        }
-                /* Estado Offline - Vermelho */
-        .offline { color: var(--danger); }
-        .offline .dot { 
-            background: var(--danger); 
-            box-shadow: 0 0 10px var(--danger); 
-        }
+        .percentage { font-family: var(--font-bold); font-size: 4.5rem; line-height: 1; margin-bottom: 10px; transition: color 0.5s ease; }
+        .value-text { color: var(--text-gray); margin-bottom: 20px; font-size: 0.95rem; }
+        .bar-container { background: #f8fafc; height: 8px; border-radius: 4px; overflow: hidden; }
+        .bar-fill { height: 100%; width: 0%; transition: width 1.5s cubic-bezier(0.1, 0, 0, 1), background-color 0.5s ease; }
 
-        /* Estado Online - Verde */
-        .online { color: var(--success); }
-        .online .dot { 
-            background: var(--success); 
-            box-shadow: 0 0 10px var(--success); 
-        }
-        .percentage { 
-            font-family: var(--font-bold); 
-            font-size: 4.5rem; 
-            line-height: 1; 
-            margin-bottom: 10px;
-        }
-
-        .value-text { 
-            font-family: var(--font-light); 
-            font-size: 1rem; 
-            color: var(--text-gray); 
-            margin-bottom: 20px;
-        }
-        .value-text strong { font-family: var(--font-bold); color: var(--text-dark); }
-
-        .bar-container { background: #f8fafc; height: 6px; border-radius: 3px; overflow: hidden; }
-        .bar-fill { height: 100%; width: 0%; transition: width 1.5s cubic-bezier(0.1, 0, 0, 1); }
-
-        /* EDITOR E ACESSO */
-        .admin-trigger {
-            position: fixed;
-            bottom: 30px; right: 30px;
-            background: var(--tech-black);
-            color: white; width: 45px; height: 45px;
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            cursor: pointer; z-index: 100; opacity: 0.5; transition: 0.3s;
-        }
-        .admin-trigger:hover { opacity: 1; }
-
-        .editor-panel { 
-            display: none; 
-            margin-top: 60px; padding: 40px; 
-            background: #fafafa; border: 1px solid #eee;
-            box-shadow: 0 12px 30px rgba(0,0,0,0.5);
-            border-radius: 15px;
-        }
-        .editor-panel h2 { font-family: var(--font-bold); margin-bottom: 25px; }
-
-        .inputs-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
-        .input-group label { font-family: var(--font-bold); font-size: 0.75rem; text-transform: uppercase; display: block; margin-bottom: 8px; }
         
-        input { 
-            font-family: var(--font-bold); 
-            padding: 12px; border: 1px solid #ddd; 
-            border-radius: 4px; width: 100%; outline: none; 
+
+        /* EXPANSÃO E GRÁFICOS */
+        .card-extra { 
+            max-height: 0; opacity: 0; overflow: hidden; 
+            transition: max-height 0.6s cubic-bezier(0, 1, 0, 1), opacity 0.3s ease; 
         }
-.section-results-title {
-    font-family: var(--font-bold);
-    font-size: 1.6rem;         /* Tamanho de destaque */
-    color: #1a1a1a;            /* Cinza escuro profissional */
+        .card.expanded .card-extra { 
+            max-height: 300px; opacity: 1; margin-top: 20px; 
+            padding-top: 20px; border-top: 1px dashed #eee; 
+        }
+        .chart-container { height: 130px; width: 100%; }
+
+/* Títulos dos Cards Maiores */
+.card-title { 
+    font-family: var(--font-bold); 
+    font-size: 1.6rem; /* Aumentado de 1.1rem para 1.6rem */
+    letter-spacing: 1px;
+    color: var(--text-dark); 
     text-transform: uppercase;
-    letter-spacing: 4px;       /* Espaçamento extra para ar moderno */
-    margin-top: 40px;          /* Espaço em relação ao header */
-    margin-bottom: 0.8px;       /* Espaço em relação aos cards */
-    padding-left: 10px;        /* Alinhamento com o início dos cards */
-    display: block;
-    border-bottom: 0.2px solid #f0f0f0; /* Linha sutil embaixo para separar */
-    padding-bottom: 1   px;
+    margin-bottom: 25px;
 }
+        
+        /* EDITOR PANEL */
+        .editor-panel { 
+            display: none; margin-top: 60px; padding: 40px; 
+            background: #ffffff; border: 1px solid #e2e8f0;
+            border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.05);
+        }
+        .editor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; }
+        .input-group { background: #f8fafc; padding: 20px; border-radius: 12px; }
+        .input-group label { font-family: var(--font-bold); font-size: 0.7rem; color: var(--text-gray); display: block; margin-bottom: 10px; text-transform: uppercase; }
+        .input-pair { display: flex; gap: 10px; }
+        input[type="number"] { 
+            padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; 
+            width: 100%; font-family: var(--font-bold); outline: none; 
+        }
+        input:focus { border-color: var(--accent); }
         .btn-sync { 
-            background: var(--tech-black); color: white; border: none; 
-            padding: 20px; font-family: var(--font-bold); 
-            cursor: pointer; width: 100%; margin-top: 30px; text-transform: uppercase;
-            border-radius: 8px;
+            background: var(--tech-black); color: white; border: none; padding: 20px; 
+            font-family: var(--font-bold); cursor: pointer; width: 100%; margin-top: 30px; 
+            text-transform: uppercase; border-radius: 12px; transition: 0.3s;
         }
         .btn-sync.saved { background: var(--success); }
 
+        .admin-trigger { position: fixed; bottom: 30px; right: 30px; background: #000; color: #fff; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0.4; z-index: 100; transition: 0.3s; }
+        .admin-trigger:hover { opacity: 1; }
     </style>
 </head>
 <body>
@@ -211,168 +151,167 @@
             <img src="https://i0.wp.com/gcci.gy/wp-content/uploads/2025/01/logo-MODEC-1-Faneeza-Karim.png?ssl=1" alt="Logo">
             <div class="v-line"></div>
             <div class="title-group">
-        <div class="program-title">RAMPDOWN DASHBOARD</div>
-        <div class="subtitle">KPI Monitoring System • BETA</div>
-    </div>
-</div>
+                <div class="program-title">RAMPDOWN DASHBOARD</div>
+                <div class="subtitle">KPI Monitoring System • BETA</div>
+            </div>
+        </div>
         <div id="sync-status" class="offline">
-            <div class="dot"></div> <span id="status-text">STATUS: OFF</span>
+            <div class="dot"></div> <span id="status-text">STATUS: CONNECTING</span>
         </div>
     </div>
-</header>
 </header>
 
 <main class="container">
-    <h1 id="main-results-title" class="section-results-title">
-        LOADING RESULTS
-    </h1>
+    <h1 id="main-results-title" class="section-results-title">LOADING RESULTS</h1>
 
     <div class="kpi-grid">
-        </div>
-</main>
-<div class="container">
-    <div class="kpi-grid">
-        <div class="card">
+        <!-- OATS -->
+        <div class="card" id="card-oats">
+            <button class="card-button" onclick="expandir('card-oats')">DETAILS</button>
             <div class="card-title">OATS</div>
             <div class="percentage" id="p-OATS">0%</div>
             <div class="value-text">COMPLETED: <strong id="v-OATS">0 / 0</strong></div>
             <div class="bar-container"><div id="b-OATS" class="bar-fill"></div></div>
+            <div class="card-extra">
+                <div class="chart-container"><canvas id="chart-oats"></canvas></div>
+            </div>
         </div>
 
-        <div class="card">
+        <!-- SCE -->
+        <div class="card" id="card-sce">
+            <button class="card-button" onclick="expandir('card-sce')">DETAILS</button>
             <div class="card-title">SCE</div>
             <div class="percentage" id="p-SCE">0%</div>
             <div class="value-text">COMPLETED: <strong id="v-SCE">0 / 0</strong></div>
             <div class="bar-container"><div id="b-SCE" class="bar-fill"></div></div>
+            <div class="card-extra">
+                <div class="chart-container"><canvas id="chart-sce"></canvas></div>
+            </div>
         </div>
 
-        <div class="card">
+        <!-- CRIT #1 -->
+        <div class="card" id="card-crit1">
+            <button class="card-button" onclick="expandir('card-crit1')">DETAILS</button>
             <div class="card-title">CRIT #1</div>
             <div class="percentage" id="p-CRIT1">0%</div>
             <div class="value-text">COMPLETED: <strong id="v-CRIT1">0 / 0</strong></div>
             <div class="bar-container"><div id="b-CRIT1" class="bar-fill"></div></div>
+            <div class="card-extra">
+                <div class="chart-container"><canvas id="chart-crit1"></canvas></div>
+            </div>
         </div>
     </div>
 
+    <!-- PAINEL EDITOR -->
     <div class="editor-panel" id="editor-panel">
-        <h2>UPDATE</h2>
-        <div class="inputs-grid">
+        <h2 style="font-family:var(--font-bold); margin-bottom:30px;">UPDATE SYSTEM</h2>
+        <div class="editor-grid">
             <div class="input-group">
                 <label>OATS (Atual / Max)</label>
-                <div style="display:flex; gap:10px;"><input type="number" id="in-OATS-cur"><input type="number" id="in-OATS-max"></div>
+                <div class="input-pair"><input type="number" id="in-OATS-cur"><input type="number" id="in-OATS-max"></div>
             </div>
             <div class="input-group">
                 <label>SCE (Atual / Max)</label>
-                <div style="display:flex; gap:10px;"><input type="number" id="in-SCE-cur"><input type="number" id="in-SCE-max"></div>
+                <div class="input-pair"><input type="number" id="in-SCE-cur"><input type="number" id="in-SCE-max"></div>
             </div>
             <div class="input-group">
                 <label>CRIT 1 (Atual / Max)</label>
-                <div style="display:flex; gap:10px;"><input type="number" id="in-CRIT1-cur"><input type="number" id="in-CRIT1-max"></div>
+                <div class="input-pair"><input type="number" id="in-CRIT1-cur"><input type="number" id="in-CRIT1-max"></div>
             </div>
         </div>
         <button class="btn-sync" id="btn-save" onclick="sendToCloud()">Atualizar Base de Dados</button>
     </div>
-</div>
+</main>
 
 <div class="admin-trigger" onclick="checkPass()">🔒</div>
 
 <script>
-    // --- FIREBASE CONFIG (Substitua pelos seus dados) ---
+    // --- CONFIG FIREBASE ---
     const firebaseConfig = {
-  apiKey: "AIzaSyDpowacZTDw8AiOQFK1SOY85x8LyNk1088",
-  authDomain: "rampdown-data.firebaseapp.com",
-  projectId: "rampdown-data",
-  storageBucket: "rampdown-data.firebasestorage.app",
-  messagingSenderId: "971612677227",
-  appId: "1:971612677227:web:74c155f0d5092b96913d2e",
-  measurementId: "G-1DJKW5797D"
-};
+        apiKey: "AIzaSyDpowacZTDw8AiOQFK1SOY85x8LyNk1088",
+        authDomain: "rampdown-data.firebaseapp.com",
+        projectId: "rampdown-data",
+        databaseURL: "https://rampdown-data-default-rtdb.firebaseio.com", // Adicionado para garantir conexão
+        storageBucket: "rampdown-data.firebasestorage.app",
+        messagingSenderId: "971612677227",
+        appId: "1:971612677227:web:74c155f0d5092b96913d2e"
+    };
 
     if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
     const kpis = ['OATS', 'SCE', 'CRIT1'];
+    const chartInstances = {};
 
-    // 1. ANIMAÇÃO HEADER
-    const canvas = document.getElementById('bg-canvas');
-    const ctx = canvas.getContext('2d');
-    let pts = [];
-    function init() {
-        canvas.width = window.innerWidth; canvas.height = 100;
-        pts = [];
-        for(let i=0; i<30; i++) pts.push({x: Math.random()*canvas.width, y: Math.random()*canvas.height, vx: 0.2, vy: 0.2});
-    }
-    function draw() {
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        ctx.fillStyle = "#fff"; ctx.strokeStyle = "rgba(255,255,255,0.1)";
-        pts.forEach(p => {
-            p.x += p.vx; p.y += p.vy;
-            if(p.x > canvas.width) p.x = 0; if(p.y > canvas.height) p.y = 0;
-            ctx.beginPath(); ctx.arc(p.x, p.y, 1, 0, Math.PI*2); ctx.fill();
-            pts.forEach(p2 => {
-                let d = Math.hypot(p.x-p2.x, p.y-p2.y);
-                if(d < 150) { ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p2.x, p2.y); ctx.stroke(); }
-            });
+    // --- GRÁFICOS ---
+    function initChart(id, label, color) {
+        const ctx = document.getElementById(id).getContext('2d');
+        chartInstances[id] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: ['', '', '', '', '', ''],
+                datasets: [{
+                    data: [0, 0, 0, 0, 0, 0],
+                    borderColor: color,
+                    tension: 0.4,
+                    fill: false,
+                    borderWidth: 2,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { x: { display: false }, y: { display: false, min: 0, max: 100 } }
+            }
         });
-        requestAnimationFrame(draw);
     }
-    init(); draw();
-function configurarTituloDinamico() {
-    const mesesIngles = [
-        "JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE",
-        "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"
-    ];
 
-    const data = new Date();
-    const mesAtual = mesesIngles[data.getMonth()];
-    
-    const elementoTitulo = document.getElementById('main-results-title');
-    if (elementoTitulo) {
-        elementoTitulo.textContent = `${mesAtual} RESULTS`;
+    // --- EXPANDIR INDIVIDUAL ---
+    function expandir(id) {
+        const card = document.getElementById(id);
+        const btn = card.querySelector('.card-button');
+        card.classList.toggle('expanded');
+        btn.textContent = card.classList.contains('expanded') ? "CLOSE" : "DETAILS";
     }
-}
 
-// Chama a função assim que a página carregar
-window.onload = configurarTituloDinamico;
-    // 2. SENHA
-    function checkPass() {
-        if(prompt("Senha:") === "Fab222324") {
-            document.getElementById('editor-panel').style.display = 'block';
-            window.scrollTo(0, document.body.scrollHeight);
+    // --- FIREBASE SYNC ---
+    db.ref(".info/connected").on("value", (snap) => {
+        const statusDiv = document.getElementById('sync-status');
+        const statusText = document.getElementById('status-text');
+        if (snap.val() === true) {
+            statusDiv.className = 'online'; statusText.textContent = 'STATUS: ONLINE';
+        } else {
+            statusDiv.className = 'offline'; statusText.textContent = 'STATUS: CONNECTING';
         }
-    }
-
-    // 3. FIREBASE SYNC
-    // Monitor de Conexão em Tempo Real
-db.ref(".info/connected").on("value", (snap) => {
-    const statusDiv = document.getElementById('sync-status');
-    const statusText = document.getElementById('status-text');
-
-    if (snap.val() === true) {
-        // Se a conexão for bem-sucedida
-        statusDiv.classList.remove('offline');
-        statusDiv.classList.add('online');
-        statusText.textContent = 'STATUS: ONLINE';
-    } else {
-        // Se a conexão cair ou ainda não tiver ocorrido
-        statusDiv.classList.remove('online');
-        statusDiv.classList.add('offline');
-        statusText.textContent = 'STATUS: CONNECTING';
-    }
-});
+    });
 
     db.ref('dashboard_live').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
             kpis.forEach(id => {
                 const cur = Number(data[id]?.cur || 0);
-                const max = Number(data[id]?.max || 0);
-                const pct = max > 0 ? (cur / max) * 100 : 0;
+                const max = Number(data[id]?.max || 1);
+                const pct = Math.floor((cur / max) * 100);
+                
+                const color = pct < 50 ? 'var(--danger)' : pct < 85 ? 'var(--warning)' : 'var(--success)';
+
                 document.getElementById(`v-${id}`).textContent = `${cur} / ${max}`;
-                document.getElementById(`p-${id}`).textContent = `${Math.floor(pct)}%`;
+                document.getElementById(`p-${id}`).textContent = `${pct}%`;
+                document.getElementById(`p-${id}`).style.color = color;
+                
                 const bar = document.getElementById(`b-${id}`);
                 bar.style.width = Math.min(pct, 100) + "%";
-                bar.style.backgroundColor = pct < 50 ? 'var(--danger)' : pct < 85 ? 'var(--warning)' : 'var(--success)';
-                document.getElementById(`p-${id}`).style.color = bar.style.backgroundColor;
+                bar.style.backgroundColor = color;
+
+                // Atualizar Gráfico
+                const cId = `chart-${id.toLowerCase()}`;
+                if(chartInstances[cId]) {
+                    chartInstances[cId].data.datasets[0].data.push(pct);
+                    chartInstances[cId].data.datasets[0].data.shift();
+                    chartInstances[cId].update();
+                }
+
                 if (document.activeElement.id !== `in-${id}-cur`) document.getElementById(`in-${id}-cur`).value = cur;
                 if (document.activeElement.id !== `in-${id}-max`) document.getElementById(`in-${id}-max`).value = max;
             });
@@ -389,10 +328,82 @@ db.ref(".info/connected").on("value", (snap) => {
         });
         db.ref('dashboard_live').set(payload).then(() => {
             const b = document.getElementById('btn-save');
-            b.classList.add('saved'); b.textContent = "BASE ATUALIZADA";
+            b.classList.add('saved'); b.textContent = "SUCESSO!";
             setTimeout(() => { b.classList.remove('saved'); b.textContent = "Atualizar Base de Dados"; }, 2000);
         });
     }
+
+    const canvas = document.getElementById('bg-canvas');
+const ctx = canvas.getContext('2d');
+let count = 0;
+
+function init() {
+    canvas.width = window.innerWidth;
+    canvas.height = 100;
+}
+
+function draw() {
+    // Fundo preto com rastro para suavizar a onda
+    ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+    gradient.addColorStop(0, "rgba(37, 99, 235, 0.5)"); // Azul Modec
+    gradient.addColorStop(0.5, "rgba(16, 185, 129, 0.8)"); // Verde Success no meio
+    gradient.addColorStop(1, "rgba(37, 99, 235, 0.5)");
+
+    ctx.beginPath();
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = gradient;
+
+    // Criando a onda digital
+    for (let i = 0; i < canvas.width; i += 2) {
+        // Equação da onda: amplitude * sen(frequência * x + deslocamento)
+        const amplitude = 25;
+        const frequency = 0.005;
+        const y = canvas.height / 2 + Math.sin(i * frequency + count) * amplitude;
+        
+        // Adiciona uma "interferência" digital aleatória sutil
+        const noise = (Math.random() - 0.5) * 2; 
+
+        if (i === 0) {
+            ctx.moveTo(i, y + noise);
+        } else {
+            ctx.lineTo(i, y + noise);
+        }
+    }
+
+    // Efeito de brilho (Glow) na onda
+    ctx.shadowBlur = 1;
+    ctx.shadowColor = "rgba(37, 99, 235, 1)";
+    
+    ctx.stroke();
+    ctx.shadowBlur = 0; // Reseta o blur para não pesar nos próximos frames
+
+    count += 0.01; // Velocidade da onda
+    requestAnimationFrame(draw);
+}
+
+window.addEventListener('resize', init);
+init();
+draw();
+
+    function checkPass() {
+        if(prompt("Senha:") === "222324") {
+            document.getElementById('editor-panel').style.display = 'block';
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        }
+    }
+
+    window.onload = () => {
+        init(); draw();
+        const meses = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+        document.getElementById('main-results-title').textContent = `${meses[new Date().getMonth()]} RESULTS`;
+        
+        initChart('chart-oats', 'OATS', '#2563eb');
+        initChart('chart-sce', 'SCE', '#10b981');
+        initChart('chart-crit1', 'CRIT', '#f59e0b');
+    };
 </script>
 </body>
 </html>
