@@ -343,44 +343,76 @@ function init() {
 }
 
 function draw() {
-    // Fundo preto com rastro para suavizar a onda
+    // Fundo preto com rastro
     ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-    gradient.addColorStop(0, "rgba(37, 99, 235, 0.5)"); // Azul Modec
-    gradient.addColorStop(0.5, "rgba(16, 185, 129, 0.8)"); // Verde Success no meio
-    gradient.addColorStop(1, "rgba(37, 99, 235, 0.5)");
+    // Configurações das ondas
+    const waves = [
+        { amplitude: 24, frequency: 0.0050, phase: 0,            colorStops: [
+            { stop: 0, color: "rgba(55, 39, 245, 0.8)" },
+            { stop: 0.5, color: "rgba(16, 185, 129, 0.9)" },
+            { stop: 1, color: "rgba(37, 99, 235, 0.6)" }
+        ], shadow: "rgba(37, 99, 235, 1)" },
 
-    ctx.beginPath();
-    ctx.lineWidth = 2;
-    ctx.strokeStyle = gradient;
+        { amplitude: 18, frequency: 0.0065, phase: Math.PI / 3,  colorStops: [
+            { stop: 0, color: "rgba(99, 102, 241, 0.5)" },
+            { stop: 0.5, color: "rgba(55, 39, 245, 0.8)" },
+            { stop: 1, color: "rgba(99, 102, 241, 0.5)" }
+        ], shadow: "rgba(99, 102, 241, 1)" },
 
-    // Criando a onda digital
-    for (let i = 0; i < canvas.width; i += 2) {
-        // Equação da onda: amplitude * sen(frequência * x + deslocamento)
-        const amplitude = 25;
-        const frequency = 0.005;
-        const y = canvas.height / 2 + Math.sin(i * frequency + count) * amplitude;
-        
-        // Adiciona uma "interferência" digital aleatória sutil
-        const noise = (Math.random() - 0.5) * 2; 
+        { amplitude: 14, frequency: 0.0042, phase: Math.PI / 1.8, colorStops: [
+            { stop: 0, color: "rgba(56, 189, 248, 0.5)" },
+            { stop: 0.5, color: "rgba(55, 39, 245, 0.8)" },
+            { stop: 1, color: "rgba(56, 189, 248, 0.5)" }
+        ], shadow: "rgba(56, 189, 248, 1)" }
+    ];
 
-        if (i === 0) {
-            ctx.moveTo(i, y + noise);
-        } else {
-            ctx.lineTo(i, y + noise);
+    // Desenha as ondas
+    for (const w of waves) {
+        const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
+        w.colorStops.forEach(cs => gradient.addColorStop(cs.stop, cs.color));
+
+        ctx.beginPath();
+        ctx.lineWidth = 2;
+        ctx.strokeStyle = gradient;
+
+        for (let x = 0; x < canvas.width; x += 2) {
+            const yBase = Math.sin(x * w.frequency + count + w.phase) * w.amplitude;
+            const harmonic = Math.sin(x * (w.frequency * 1.8) + count * 0.7) * (w.amplitude * 0.25);
+            const noise = (Math.random() - 0.5) * 1.5;
+            const y = canvas.height / 2 + yBase + harmonic + noise;
+
+            if (x === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
         }
+
+        // Glow
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = w.shadow;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
     }
 
-    // Efeito de brilho (Glow) na onda
-    ctx.shadowBlur = 1;
-    ctx.shadowColor = "rgba(37, 99, 235, 1)";
-    
-    ctx.stroke();
-    ctx.shadowBlur = 0; // Reseta o blur para não pesar nos próximos frames
+    // === Fade à esquerda (máscara de transparência) ===
+    // Ajuste 'fadeWidth' para controlar o quanto do lado esquerdo some.
+    const fadeWidth = Math.min(180, canvas.width * 0.18); // ex: 180px ou 18% da largura
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-in';
 
-    count += 0.01; // Velocidade da onda
+    // Gradiente horizontal de transparente (esquerda) para opaco (direita)
+    const fade = ctx.createLinearGradient(0, 0, fadeWidth * 5, 0);
+    fade.addColorStop(0, 'rgba(0,0,0,0)');      // totalmente transparente bem na borda
+    fade.addColorStop(0.4, 'rgba(0,0,0,0.25)'); // transição suave
+    fade.addColorStop(0.9, 'rgba(0,0,0,0.85)'); // quase opaco
+    fade.addColorStop(1, 'rgba(0,0,0,1)');      // opaco (mantém o resto intacto)
+
+    ctx.fillStyle = fade;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.restore();
+    // === Fim do fade ===
+
+    count += 0.01;
     requestAnimationFrame(draw);
 }
 
