@@ -204,8 +204,13 @@
 
     <!-- PAINEL EDITOR -->
     <div class="editor-panel" id="editor-panel">
-        <h2 style="font-family:var(--font-bold); margin-bottom:30px;">UPDATE SYSTEM</h2>
-        <div class="editor-grid">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
+        <h2 style="font-family:var(--font-bold);">UPDATE SYSTEM</h2>
+        <button id="btn-close-editor" class="card-button" onclick="closeEditor()" style="position:static; padding:8px 14px;">
+            CLOSE
+        </button>
+    </div>
+    <div class="editor-grid">
             <div class="input-group">
                 <label>OATS (Atual / Max)</label>
                 <div class="input-pair"><input type="number" id="in-OATS-cur"><input type="number" id="in-OATS-max"></div>
@@ -405,7 +410,16 @@ draw();
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }
     }
+function openEditor() {
+    const panel = document.getElementById('editor-panel');
+    panel.style.display = 'block';
+    window.scrollTo({ top: panel.offsetTop - 20, behavior: 'smooth' });
+}
 
+function closeEditor() {
+    const panel = document.getElementById('editor-panel');
+    panel.style.display = 'none';
+}
     window.onload = () => {
         init(); draw();
         const meses = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
