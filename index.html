@@ -65,7 +65,7 @@
             display: grid; 
             grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); 
             gap: 30px; 
-            align-items: start; /* CORREÇÃO: Impede que os cards estiquem juntos na mesma linha */
+            align-items: start;
         }
 
         /* CARDS */
@@ -93,8 +93,6 @@
         .bar-container { background: #f8fafc; height: 8px; border-radius: 4px; overflow: hidden; }
         .bar-fill { height: 100%; width: 0%; transition: width 1.5s cubic-bezier(0.1, 0, 0, 1), background-color 0.5s ease; }
 
-        
-
         /* EXPANSÃO E GRÁFICOS */
         .card-extra { 
             max-height: 0; opacity: 0; overflow: hidden; 
@@ -106,15 +104,15 @@
         }
         .chart-container { height: 130px; width: 100%; }
 
-/* Títulos dos Cards Maiores */
-.card-title { 
-    font-family: var(--font-bold); 
-    font-size: 1.6rem; /* Aumentado de 1.1rem para 1.6rem */
-    letter-spacing: 1px;
-    color: var(--text-dark); 
-    text-transform: uppercase;
-    margin-bottom: 25px;
-}
+        /* Títulos dos Cards Maiores */
+        .card-title { 
+            font-family: var(--font-bold); 
+            font-size: 1.6rem;
+            letter-spacing: 1px;
+            color: var(--text-dark); 
+            text-transform: uppercase;
+            margin-bottom: 25px;
+        }
         
         /* EDITOR PANEL */
         .editor-panel { 
@@ -204,13 +202,13 @@
 
     <!-- PAINEL EDITOR -->
     <div class="editor-panel" id="editor-panel">
-    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
-        <h2 style="font-family:var(--font-bold);">UPDATE SYSTEM</h2>
-        <button id="btn-close-editor" class="card-button" onclick="closeEditor()" style="position:static; padding:8px 14px;">
-            CLOSE
-        </button>
-    </div>
-    <div class="editor-grid">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
+            <h2 style="font-family:var(--font-bold);">UPDATE SYSTEM</h2>
+            <button id="btn-close-editor" class="card-button" onclick="closeEditor()" style="position:static; padding:8px 14px;">
+                CLOSE
+            </button>
+        </div>
+        <div class="editor-grid">
             <div class="input-group">
                 <label>OATS (Atual / Max)</label>
                 <div class="input-pair"><input type="number" id="in-OATS-cur"><input type="number" id="in-OATS-max"></div>
@@ -236,7 +234,7 @@
         apiKey: "AIzaSyDpowacZTDw8AiOQFK1SOY85x8LyNk1088",
         authDomain: "rampdown-data.firebaseapp.com",
         projectId: "rampdown-data",
-        databaseURL: "https://rampdown-data-default-rtdb.firebaseio.com", // Adicionado para garantir conexão
+        databaseURL: "https://rampdown-data-default-rtdb.firebaseio.com",
         storageBucket: "rampdown-data.firebasestorage.app",
         messagingSenderId: "971612677227",
         appId: "1:971612677227:web:74c155f0d5092b96913d2e"
@@ -247,27 +245,55 @@
     const kpis = ['OATS', 'SCE', 'CRIT1'];
     const chartInstances = {};
 
-    // --- GRÁFICOS ---
+    // --- GRÁFICOS (SUAVES + TOOLTIP COM DATA E VALOR) ---
     function initChart(id, label, color) {
         const ctx = document.getElementById(id).getContext('2d');
         chartInstances[id] = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: ['', '', '', '', '', ''],
+                labels: ['-', '-', '-', '-', '-', '-'],
                 datasets: [{
+                    label,
                     data: [0, 0, 0, 0, 0, 0],
                     borderColor: color,
-                    tension: 0.4,
-                    fill: false,
                     borderWidth: 2,
-                    pointRadius: 0
+                    fill: false,
+                    tension: 0.45,
+                    cubicInterpolationMode: 'monotone',
+                    pointRadius: 2,
+                    pointHoverRadius: 4,
+                    pointBackgroundColor: color,
+                    pointBorderColor: color
                 }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { x: { display: false }, y: { display: false, min: 0, max: 100 } }
+                animation: {
+                    duration: 900,
+                    easing: 'easeInOutCubic'
+                },
+                transitions: {
+                    active: { animation: { duration: 400 } }
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: true,
+                        intersect: false,
+                        mode: 'index',
+                        callbacks: {
+                            title: (items) => items[0]?.label || '',
+                            label: (ctx) => `${Math.round(ctx.parsed.y)}%`
+                        }
+                    }
+                },
+                hover: { mode: 'nearest', intersect: true },
+                elements: { line: { capBezierPoints: true } },
+                scales: {
+                    x: { display: false },
+                    y: { display: false, min: 0, max: 100 }
+                }
             }
         });
     }
@@ -280,7 +306,7 @@
         btn.textContent = card.classList.contains('expanded') ? "CLOSE" : "DETAILS";
     }
 
-    // --- FIREBASE SYNC ---
+    // --- STATUS FIREBASE ---
     db.ref(".info/connected").on("value", (snap) => {
         const statusDiv = document.getElementById('sync-status');
         const statusText = document.getElementById('status-text');
@@ -291,6 +317,7 @@
         }
     });
 
+    // --- ATUALIZAÇÃO DOS KPIs ATUAIS (dashboard_live) ---
     db.ref('dashboard_live').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
@@ -308,118 +335,142 @@
                 const bar = document.getElementById(`b-${id}`);
                 bar.style.width = Math.min(pct, 100) + "%";
                 bar.style.backgroundColor = color;
-
-                // Atualizar Gráfico
-                const cId = `chart-${id.toLowerCase()}`;
-                if(chartInstances[cId]) {
-                    chartInstances[cId].data.datasets[0].data.push(pct);
-                    chartInstances[cId].data.datasets[0].data.shift();
-                    chartInstances[cId].update();
-                }
-
-                if (document.activeElement.id !== `in-${id}-cur`) document.getElementById(`in-${id}-cur`).value = cur;
-                if (document.activeElement.id !== `in-${id}-max`) document.getElementById(`in-${id}-max`).value = max;
             });
         }
     });
 
+    // --- HISTÓRICO PARA OS GRÁFICOS: ouvir os últimos 6 pontos de cada KPI ---
+    kpis.forEach(id => {
+        const cId = `chart-${id.toLowerCase()}`;
+        db.ref(`dashboard_history/${id}`).limitToLast(6).on('value', snap => {
+            const vals = snap.val();
+            if (!vals || !chartInstances[cId]) return;
+
+            const rows = Object.values(vals).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+
+            const labels = rows.map(r => {
+                const d = new Date(r.ts);
+                return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
+                    + ' ' +
+                    d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            });
+            const data = rows.map(r => Number(r.pct || 0));
+
+            const chart = chartInstances[cId];
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = data;
+            chart.update({ duration: 900, easing: 'easeInOutCubic' });
+        });
+    });
+
+    // --- ENVIAR DADOS E REGISTRAR HISTÓRICO (valor + data/hora) ---
     function sendToCloud() {
         const payload = {};
+        const historyUpdates = [];
+
         kpis.forEach(id => {
-            payload[id] = {
-                cur: Number(document.getElementById(`in-${id}-cur`).value) || 0,
-                max: Number(document.getElementById(`in-${id}-max`).value) || 0
-            };
+            const cur = Number(document.getElementById(`in-${id}-cur`).value) || 0;
+            const max = Number(document.getElementById(`in-${id}-max`).value) || 0;
+            const pct = max > 0 ? Math.floor((cur / max) * 100) : 0;
+
+            // payload atual
+            payload[id] = { cur, max };
+
+            // histórico com timestamp
+            const ts = Date.now();
+            const entry = { cur, max, pct, ts };
+            const refHist = db.ref(`dashboard_history/${id}`);
+            historyUpdates.push(refHist.push(entry));
         });
+
         db.ref('dashboard_live').set(payload).then(() => {
+            return Promise.all(historyUpdates);
+        }).then(() => {
             const b = document.getElementById('btn-save');
             b.classList.add('saved'); b.textContent = "SUCESSO!";
             setTimeout(() => { b.classList.remove('saved'); b.textContent = "Atualizar Base de Dados"; }, 2000);
+        }).catch(err => {
+            console.error('Erro ao atualizar:', err);
+            alert('Erro ao atualizar a base de dados/histórico.');
         });
     }
 
+    // --- HEADER WAVES ---
     const canvas = document.getElementById('bg-canvas');
-const ctx = canvas.getContext('2d');
-let count = 0;
+    const ctx = canvas.getContext('2d');
+    let count = 0;
 
-function init() {
-    canvas.width = window.innerWidth;
-    canvas.height = 100;
-}
-
-function draw() {
-    // Fundo limpo
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    const centerY = canvas.height / 2;
-    const color = "rgba(36, 80, 255, 1)"; // branco bem visível
-
-    // 3 ondas bem visíveis
-    const waves = [
-        { amplitude: Math.max(34, canvas.height * 0.09), frequency: 0.0046, phase: 0,                 lineWidth: 2.8 },
-        { amplitude: Math.max(28, canvas.height * 0.08), frequency: 0.0062, phase: Math.PI / 2.6,     lineWidth: 2.6 },
-        { amplitude: Math.max(22, canvas.height * 0.07), frequency: 0.0042, phase: Math.PI / 1.6,     lineWidth: 2.4 }
-    ];
-
-    // Desenho das ondas (apenas linhas sólidas)
-    for (const w of waves) {
-        ctx.beginPath();
-        ctx.lineWidth = w.lineWidth;
-        ctx.strokeStyle = color;
-
-        const step = 1; // resolução densa para linhas contínuas
-
-        for (let x = 0; x < canvas.width; x += step) {
-            const y = centerY + Math.sin(x * w.frequency + count + w.phase) * w.amplitude;
-            if (x === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-        }
-
-        ctx.stroke();
+    function init() {
+        canvas.width = window.innerWidth;
+        canvas.height = 100;
     }
 
-    // Fade à esquerda — curto e começando um pouco fora da tela
-    const fadePad = 480;                     // empurra o início do gradiente para fora
-    const fadeWidth = Math.min(80, canvas.width * 0.10); // faixa pequena para não esconder as ondas
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    ctx.save();
-    ctx.globalCompositeOperation = 'destination-in';
+        const centerY = canvas.height / 2;
+        const color = "rgba(36, 80, 255, 1)";
 
-    const fade = ctx.createLinearGradient(fadePad, 0, fadePad + fadeWidth, 0);
-    fade.addColorStop(0.00, 'rgba(0,0,0,0)');   // fora da tela
-    fade.addColorStop(0.50, 'rgba(0,0,0,0.35)');
-    fade.addColorStop(0.85, 'rgba(0,0,0,0.85)');
-    fade.addColorStop(1.00, 'rgba(0,0,0,1)');   // opaco rápido
+        const waves = [
+            { amplitude: Math.max(34, canvas.height * 0.09), frequency: 0.0046, phase: 0,                 lineWidth: 2.8 },
+            { amplitude: Math.max(28, canvas.height * 0.08), frequency: 0.0062, phase: Math.PI / 2.6,     lineWidth: 2.6 },
+            { amplitude: Math.max(22, canvas.height * 0.07), frequency: 0.0042, phase: Math.PI / 1.6,     lineWidth: 2.4 }
+        ];
 
-    ctx.fillStyle = fade;
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.restore();
+        for (const w of waves) {
+            ctx.beginPath();
+            ctx.lineWidth = w.lineWidth;
+            ctx.strokeStyle = color;
 
-    // Animação
-    count += 0.01;
-    requestAnimationFrame(draw);
-}
+            const step = 1;
+            for (let x = 0; x < canvas.width; x += step) {
+                const y = centerY + Math.sin(x * w.frequency + count + w.phase) * w.amplitude;
+                if (x === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
 
-window.addEventListener('resize', init);
-init();
-draw();
+        const fadePad = 480;
+        const fadeWidth = Math.min(80, canvas.width * 0.10);
 
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-in';
+
+        const fade = ctx.createLinearGradient(fadePad, 0, fadePad + fadeWidth, 0);
+        fade.addColorStop(0.00, 'rgba(0,0,0,0)');
+        fade.addColorStop(0.50, 'rgba(0,0,0,0.35)');
+        fade.addColorStop(0.85, 'rgba(0,0,0,0.85)');
+        fade.addColorStop(1.00, 'rgba(0,0,0,1)');
+
+        ctx.fillStyle = fade;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+
+        count += 0.01;
+        requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', init);
+    init();
+    draw();
+
+    // --- ADMIN / EDITOR ---
     function checkPass() {
-        if(prompt("Senha:") === "222324") {
-            document.getElementById('editor-panel').style.display = 'block';
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        if (prompt("Senha:") === "222324") {
+            openEditor();
         }
     }
-function openEditor() {
-    const panel = document.getElementById('editor-panel');
-    panel.style.display = 'block';
-    window.scrollTo({ top: panel.offsetTop - 20, behavior: 'smooth' });
-}
+    function openEditor() {
+        const panel = document.getElementById('editor-panel');
+        panel.style.display = 'block';
+        window.scrollTo({ top: panel.offsetTop - 20, behavior: 'smooth' });
+    }
+    function closeEditor() {
+        const panel = document.getElementById('editor-panel');
+        panel.style.display = 'none';
+    }
 
-function closeEditor() {
-    const panel = document.getElementById('editor-panel');
-    panel.style.display = 'none';
-}
     window.onload = () => {
         init(); draw();
         const meses = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
