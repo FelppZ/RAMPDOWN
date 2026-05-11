@@ -343,74 +343,77 @@ function init() {
 }
 
 function draw() {
-    // Fundo preto com rastro
-    ctx.fillStyle = "rgba(0, 0, 0, 0.2)";
+    // Fundo com rastro leve
+    ctx.fillStyle = "rgba(0, 0, 0, 0.22)";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Configurações das ondas
+    const centerY = canvas.height / 2;
+    const waveColor = "rgba(16, 0, 214, 0.8)";   // cor solicitada
+    const fillColor = "rgba(36, 0, 255, 0.14)";  // preenchimento sutil (ajuste ou remova)
+
+    // Três ondas finas
     const waves = [
-        { amplitude: 24, frequency: 0.0050, phase: 0,            colorStops: [
-            { stop: 0, color: "rgba(55, 39, 245, 0.8)" },
-            { stop: 0.5, color: "rgba(16, 185, 129, 0.9)" },
-            { stop: 1, color: "rgba(37, 99, 235, 0.6)" }
-        ], shadow: "rgba(37, 99, 235, 1)" },
-
-        { amplitude: 18, frequency: 0.0065, phase: Math.PI / 3,  colorStops: [
-            { stop: 0, color: "rgba(99, 102, 241, 0.5)" },
-            { stop: 0.5, color: "rgba(55, 39, 245, 0.8)" },
-            { stop: 1, color: "rgba(99, 102, 241, 0.5)" }
-        ], shadow: "rgba(99, 102, 241, 1)" },
-
-        { amplitude: 14, frequency: 0.0042, phase: Math.PI / 1.8, colorStops: [
-            { stop: 0, color: "rgba(56, 189, 248, 0.5)" },
-            { stop: 0.5, color: "rgba(55, 39, 245, 0.8)" },
-            { stop: 1, color: "rgba(56, 189, 248, 0.5)" }
-        ], shadow: "rgba(56, 189, 248, 1)" }
+        { amplitude: 26, frequency: 0.0050, phase: 0,              lineWidth: 1.4 },
+        { amplitude: 20, frequency: 0.0062, phase: Math.PI / 3,    lineWidth: 1.2 },
+        { amplitude: 16, frequency: 0.0044, phase: Math.PI / 1.8,  lineWidth: 1.2 }
     ];
 
-    // Desenha as ondas
     for (const w of waves) {
-        const gradient = ctx.createLinearGradient(0, 0, canvas.width, 0);
-        w.colorStops.forEach(cs => gradient.addColorStop(cs.stop, cs.color));
-
+        // Caminho principal para o traço
         ctx.beginPath();
-        ctx.lineWidth = 2;
-        ctx.strokeStyle = gradient;
+        ctx.lineWidth = w.lineWidth;
+        ctx.strokeStyle = waveColor;
 
-        for (let x = 0; x < canvas.width; x += 2) {
-            const yBase = Math.sin(x * w.frequency + count + w.phase) * w.amplitude;
-            const harmonic = Math.sin(x * (w.frequency * 1.8) + count * 0.7) * (w.amplitude * 0.25);
-            const noise = (Math.random() - 0.5) * 1.5;
-            const y = canvas.height / 2 + yBase + harmonic + noise;
+        const step = 2;              // resolução horizontal
+        const harmonicScale = 0.12;  // harmônico discreto
+        const noiseScale = 0.25;     // pouco ruído para manter “fino” e limpo
+
+        const points = [];
+
+        for (let x = 0; x < canvas.width; x += step) {
+            const base = Math.sin(x * w.frequency + count + w.phase) * w.amplitude;
+            const harmonic = Math.sin(x * (w.frequency * 1.5) + count * 0.6) * (w.amplitude * harmonicScale);
+            const noise = (Math.random() - 0.5) * noiseScale;
+            const y = centerY + base + harmonic + noise;
+
+            points.push({ x, y });
 
             if (x === 0) ctx.moveTo(x, y);
             else ctx.lineTo(x, y);
         }
 
-        // Glow
-        ctx.shadowBlur = 8;
-        ctx.shadowColor = w.shadow;
-        ctx.stroke();
+        // Sem glow: garantir que não há sombra
         ctx.shadowBlur = 0;
+        ctx.stroke();
+
+        // Preenchimento leve sob a curva (opcional). Para remover, comente este bloco.
+        ctx.beginPath();
+        for (let i = 0; i < points.length; i++) {
+            const p = points[i];
+            if (i === 0) ctx.moveTo(p.x, p.y);
+            else ctx.lineTo(p.x, p.y);
+        }
+        ctx.lineTo(points[points.length - 1].x, centerY);
+        ctx.lineTo(points[0].x, centerY);
+        ctx.closePath();
+        ctx.fillStyle = fillColor;
+        ctx.fill();
     }
 
-    // === Fade à esquerda (máscara de transparência) ===
-    // Ajuste 'fadeWidth' para controlar o quanto do lado esquerdo some.
-    const fadeWidth = Math.min(180, canvas.width * 0.18); // ex: 180px ou 18% da largura
+    // Fade à esquerda para não cobrir o logo
+    const fadeWidth = Math.min(180, canvas.width * 0.18);
     ctx.save();
     ctx.globalCompositeOperation = 'destination-in';
 
-    // Gradiente horizontal de transparente (esquerda) para opaco (direita)
-    const fade = ctx.createLinearGradient(0, 0, fadeWidth * 5, 0);
-    fade.addColorStop(0, 'rgba(0,0,0,0)');      // totalmente transparente bem na borda
-    fade.addColorStop(0.4, 'rgba(0,0,0,0.25)'); // transição suave
-    fade.addColorStop(0.9, 'rgba(0,0,0,0.85)'); // quase opaco
-    fade.addColorStop(1, 'rgba(0,0,0,1)');      // opaco (mantém o resto intacto)
+    const fade = ctx.createLinearGradient(0, 0, fadeWidth * 1.6, 0);
+    fade.addColorStop(0, 'rgba(0,0,0,0)');
+    fade.addColorStop(0.5, 'rgba(0,0,0,0.25)');
+    fade.addColorStop(0.95, 'rgba(0,0,0,0.9)');
+    fade.addColorStop(1, 'rgba(0,0,0,1)');
 
     ctx.fillStyle = fade;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.restore();
-    // === Fim do fade ===
 
     count += 0.01;
     requestAnimationFrame(draw);
