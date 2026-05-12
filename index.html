@@ -317,7 +317,7 @@
         }
     });
 
-    // --- ATUALIZAÇÃO DOS KPIs ATUAIS (dashboard_live) ---
+    // --- ATUALIZAÇÃO DOS KPIs ATUAIS (dashboard_live) + SYNC DOS INPUTS ---
     db.ref('dashboard_live').on('value', (snapshot) => {
         const data = snapshot.val();
         if (data) {
@@ -328,6 +328,7 @@
                 
                 const color = pct < 50 ? 'var(--danger)' : pct < 85 ? 'var(--warning)' : 'var(--success)';
 
+                // Cards
                 document.getElementById(`v-${id}`).textContent = `${cur} / ${max}`;
                 document.getElementById(`p-${id}`).textContent = `${pct}%`;
                 document.getElementById(`p-${id}`).style.color = color;
@@ -335,6 +336,12 @@
                 const bar = document.getElementById(`b-${id}`);
                 bar.style.width = Math.min(pct, 100) + "%";
                 bar.style.backgroundColor = color;
+
+                // Inputs do UPDATE SYSTEM (sem atrapalhar quando o usuário está digitando)
+                const inCur = document.getElementById(`in-${id}-cur`);
+                const inMax = document.getElementById(`in-${id}-max`);
+                if (document.activeElement !== inCur) inCur.value = cur;
+                if (document.activeElement !== inMax) inMax.value = max;
             });
         }
     });
