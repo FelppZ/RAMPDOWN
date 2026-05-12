@@ -100,7 +100,7 @@
         }
         .card.expanded .card-extra { 
             max-height: 300px; opacity: 1; margin-top: 20px; 
-            padding-top: 20px; border-top: 1px dashed #eee; 
+            padding-top: 20px; border-top: 2px #eee; 
         }
         .chart-container { height: 130px; width: 100%; }
 
@@ -245,54 +245,94 @@
     const kpis = ['OATS', 'SCE', 'CRIT1'];
     const chartInstances = {};
 
-    // --- GRÁFICOS (SUAVES + TOOLTIP COM DATA E VALOR) ---
+    // Guarda o TOTAL COMPLETO (max) e o ATUAL (cur) de cada KPI para usar no tooltip
+    const currentMaxByKpi = { OATS: 0, SCE: 0, CRIT1: 0 };
+    const currentCurByKpi = { OATS: 0, SCE: 0, CRIT1: 0 };
+
+    // --- GRÁFICOS (linha de meta 100%, suave e tooltip com data/valor + atual) ---
     function initChart(id, label, color) {
         const ctx = document.getElementById(id).getContext('2d');
         chartInstances[id] = new Chart(ctx, {
             type: 'line',
             data: {
                 labels: ['-', '-', '-', '-', '-', '-'],
-                datasets: [{
-                    label,
-                    data: [0, 0, 0, 0, 0, 0],
-                    borderColor: color,
-                    borderWidth: 2,
-                    fill: false,
-                    tension: 0.45,
-                    cubicInterpolationMode: 'monotone',
-                    pointRadius: 2,
-                    pointHoverRadius: 4,
-                    pointBackgroundColor: color,
-                    pointBorderColor: color
-                }]
+                datasets: [
+                    // Dataset principal (valores)
+                    {
+                        label,
+                        data: [0, 0, 0, 0, 0, 0],
+                        borderColor: color,
+                        borderWidth: 2,
+                        fill: false,
+                        tension: 0.45,
+                        cubicInterpolationMode: 'monotone',
+                        pointRadius: 2,
+                        pointHoverRadius: 5,
+                        pointHitRadius: 10,
+                        pointBackgroundColor: color,
+                        pointBorderColor: color,
+                        clip: 10
+                    },
+                    // Linha de meta 100% (tracejada)
+                    {
+                        label: 'META 100%',
+                        data: [100, 100, 100, 100, 100, 100],
+                        borderColor: 'rgba(0,0,0,0.35)',
+                        borderWidth: 1.5,
+                        borderDash: [6, 4],
+                        pointRadius: 0,
+                        fill: false,
+                        tension: 0,
+                        hoverRadius: 0,
+                        hitRadius: 0
+                    }
+                ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                animation: {
-                    duration: 900,
-                    easing: 'easeInOutCubic'
+                layout: { padding: { top: 8, bottom: 4 } },
+                animation: { duration: 900, easing: 'easeInOutCubic' },
+                transitions: { active: { animation: { duration: 400 } } },
+
+                interaction: {
+                    mode: 'nearest',
+                    intersect: true,
+                    axis: 'x'
                 },
-                transitions: {
-                    active: { animation: { duration: 400 } }
-                },
+
                 plugins: {
                     legend: { display: false },
                     tooltip: {
                         enabled: true,
-                        intersect: false,
-                        mode: 'index',
+                        position: 'nearest',
+                        intersect: true,
+                        filter: (item) => item.datasetIndex === 0, // oculta a meta
                         callbacks: {
                             title: (items) => items[0]?.label || '',
-                            label: (ctx) => `${Math.round(ctx.parsed.y)}%`
+                            label: (ctx) => {
+                                const kpi = label; // 'OATS', 'SCE' ou 'CRIT'
+                                const key = (kpi === 'CRIT') ? 'CRIT1' : kpi; // normaliza CRIT -> CRIT1
+                                const pct = Math.round(ctx.parsed.y);
+                                const cur = currentCurByKpi[key] ?? 0;
+                                return `${pct}% | ${cur}`;
+                            }
                         }
                     }
                 },
-                hover: { mode: 'nearest', intersect: true },
+                hover: {
+                    mode: 'nearest',
+                    intersect: true
+                },
                 elements: { line: { capBezierPoints: true } },
                 scales: {
                     x: { display: false },
-                    y: { display: false, min: 0, max: 100 }
+                    y: {
+                        display: false,
+                        min: 0,
+                        max: 105,
+                        grace: '2%'
+                    }
                 }
             }
         });
@@ -342,6 +382,10 @@
                 const inMax = document.getElementById(`in-${id}-max`);
                 if (document.activeElement !== inCur) inCur.value = cur;
                 if (document.activeElement !== inMax) inMax.value = max;
+
+                // Atualiza armazenamentos para tooltip
+                currentMaxByKpi[id] = max;
+                currentCurByKpi[id] = cur;
             });
         }
     });
@@ -366,40 +410,65 @@
             const chart = chartInstances[cId];
             chart.data.labels = labels;
             chart.data.datasets[0].data = data;
+            // Ajusta o dataset da meta para ter o mesmo comprimento
+            chart.data.datasets[1].data = Array(labels.length).fill(100);
+
             chart.update({ duration: 900, easing: 'easeInOutCubic' });
         });
     });
 
-    // --- ENVIAR DADOS E REGISTRAR HISTÓRICO (valor + data/hora) ---
+    // --- ENVIAR DADOS E REGISTRAR HISTÓRICO (valor + data/hora) — somente se mudar ---
     function sendToCloud() {
         const payload = {};
-        const historyUpdates = [];
+        const historyOps = []; // promessas condicionais para histórico
 
         kpis.forEach(id => {
             const cur = Number(document.getElementById(`in-${id}-cur`).value) || 0;
             const max = Number(document.getElementById(`in-${id}-max`).value) || 0;
             const pct = max > 0 ? Math.floor((cur / max) * 100) : 0;
 
-            // payload atual
+            // payload atual sempre é salvo (estado atual do painel)
             payload[id] = { cur, max };
 
-            // histórico com timestamp
-            const ts = Date.now();
-            const entry = { cur, max, pct, ts };
-            const refHist = db.ref(`dashboard_history/${id}`);
-            historyUpdates.push(refHist.push(entry));
+            // histórico: só grava se mudou em relação ao último ponto
+            const histRef = db.ref(`dashboard_history/${id}`).limitToLast(1);
+
+            const op = histRef.once('value').then(snap => {
+                let shouldPush = true;
+
+                if (snap.exists()) {
+                    const last = Object.values(snap.val())[0] || {};
+                    const lastCur = Number(last.cur ?? NaN);
+                    const lastMax = Number(last.max ?? NaN);
+                    const lastPct = Number(last.pct ?? NaN);
+
+                    if (lastCur === cur && lastMax === max && lastPct === pct) {
+                        shouldPush = false;
+                    }
+                }
+
+                if (shouldPush) {
+                    const ts = Date.now();
+                    return db.ref(`dashboard_history/${id}`).push({ cur, max, pct, ts });
+                }
+                return Promise.resolve();
+            });
+
+            historyOps.push(op);
         });
 
-        db.ref('dashboard_live').set(payload).then(() => {
-            return Promise.all(historyUpdates);
-        }).then(() => {
-            const b = document.getElementById('btn-save');
-            b.classList.add('saved'); b.textContent = "SUCESSO!";
-            setTimeout(() => { b.classList.remove('saved'); b.textContent = "Atualizar Base de Dados"; }, 2000);
-        }).catch(err => {
-            console.error('Erro ao atualizar:', err);
-            alert('Erro ao atualizar a base de dados/histórico.');
-        });
+        // Atualiza o estado atual e depois resolve os históricos condicionais
+        db.ref('dashboard_live').set(payload)
+            .then(() => Promise.all(historyOps))
+            .then(() => {
+                const b = document.getElementById('btn-save');
+                b.classList.add('saved'); b.textContent = "SUCESSO!";
+                setTimeout(() => { b.classList.remove('saved'); b.textContent = "Atualizar Base de Dados"; }, 2000);
+            })
+            .catch(err => {
+                console.error('Erro ao atualizar:', err);
+                alert('Erro ao atualizar a base de dados/histórico.');
+            });
     }
 
     // --- HEADER WAVES ---
