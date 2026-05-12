@@ -29,7 +29,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #fcfcfc; color: var(--text-dark); min-height: 100vh; font-family: var(--font-light); }
 
-        /* HEADER */
         header {
             position: relative;
             background: var(--tech-black);
@@ -53,7 +52,6 @@
         .online { color: var(--success); } .online .dot { background: var(--success); box-shadow: 0 0 10px var(--success); }
         .offline { color: var(--danger); } .offline .dot { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
 
-        /* DASHBOARD GRID */
         .container { max-width: 1300px; margin: 40px auto; padding: 0 40px; }
         .section-results-title { 
             font-family: var(--font-bold); font-size: 1.6rem; color: #1a1a1a; 
@@ -68,7 +66,6 @@
             align-items: start;
         }
 
-        /* CARDS */
         .card { 
             position: relative; 
             background: var(--pure-white); 
@@ -93,7 +90,6 @@
         .bar-container { background: #f8fafc; height: 8px; border-radius: 4px; overflow: hidden; }
         .bar-fill { height: 100%; width: 0%; transition: width 1.5s cubic-bezier(0.1, 0, 0, 1), background-color 0.5s ease; }
 
-        /* EXPANSÃO E GRÁFICOS */
         .card-extra { 
             max-height: 0; opacity: 0; overflow: hidden; 
             transition: max-height 0.6s cubic-bezier(0, 1, 0, 1), opacity 0.3s ease; 
@@ -104,7 +100,6 @@
         }
         .chart-container { height: 130px; width: 100%; }
 
-        /* Títulos dos Cards Maiores */
         .card-title { 
             font-family: var(--font-bold); 
             font-size: 1.6rem;
@@ -114,7 +109,6 @@
             margin-bottom: 25px;
         }
         
-        /* EDITOR PANEL */
         .editor-panel { 
             display: none; margin-top: 60px; padding: 40px; 
             background: #ffffff; border: 1px solid #e2e8f0;
@@ -245,22 +239,33 @@
     const kpis = ['OATS', 'SCE', 'CRIT1'];
     const chartInstances = {};
 
-    // Guarda o TOTAL COMPLETO (max) e o ATUAL (cur) de cada KPI para usar no tooltip
+    // Stores para tooltip
     const currentMaxByKpi = { OATS: 0, SCE: 0, CRIT1: 0 };
     const currentCurByKpi = { OATS: 0, SCE: 0, CRIT1: 0 };
 
-    // --- GRÁFICOS (linha de meta 100%, suave e tooltip com data/valor + atual) ---
+    // Helpers
+    const toYMD = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const fmtLabel = (ts) => {
+        const d = new Date(ts);
+        const dd = String(d.getDate()).padStart(2,'0');
+        const mm = String(d.getMonth()+1).padStart(2,'0');
+        const yyyy = d.getFullYear();
+        const hh = String(d.getHours()).padStart(2,'0');
+        const mi = String(d.getMinutes()).padStart(2,'0');
+        return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
+    };
+
+    // --- GRÁFICOS ---
     function initChart(id, label, color) {
         const ctx = document.getElementById(id).getContext('2d');
         chartInstances[id] = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: ['-', '-', '-', '-', '-', '-'],
+                labels: [],
                 datasets: [
-                    // Dataset principal (valores)
                     {
                         label,
-                        data: [0, 0, 0, 0, 0, 0],
+                        data: [],
                         borderColor: color,
                         borderWidth: 2,
                         fill: false,
@@ -273,10 +278,9 @@
                         pointBorderColor: color,
                         clip: 10
                     },
-                    // Linha de meta 100% (tracejada)
                     {
                         label: 'META 100%',
-                        data: [100, 100, 100, 100, 100, 100],
+                        data: [],
                         borderColor: 'rgba(0,0,0,0.35)',
                         borderWidth: 1.5,
                         borderDash: [6, 4],
@@ -293,52 +297,37 @@
                 maintainAspectRatio: false,
                 layout: { padding: { top: 8, bottom: 4 } },
                 animation: { duration: 900, easing: 'easeInOutCubic' },
-                transitions: { active: { animation: { duration: 400 } } },
-
-                interaction: {
-                    mode: 'nearest',
-                    intersect: true,
-                    axis: 'x'
-                },
-
+                interaction: { mode: 'nearest', intersect: true, axis: 'x' },
                 plugins: {
                     legend: { display: false },
                     tooltip: {
                         enabled: true,
                         position: 'nearest',
                         intersect: true,
-                        filter: (item) => item.datasetIndex === 0, // oculta a meta
+                        filter: (item) => item.datasetIndex === 0,
                         callbacks: {
                             title: (items) => items[0]?.label || '',
                             label: (ctx) => {
-                                const kpi = label; // 'OATS', 'SCE' ou 'CRIT'
-                                const key = (kpi === 'CRIT') ? 'CRIT1' : kpi; // normaliza CRIT -> CRIT1
-                                const pct = Math.round(ctx.parsed.y);
-                                const cur = currentCurByKpi[key] ?? 0;
-                                return `${pct}% | ${cur}`;
-                            }
+                              const chart = ctx.chart;
+                              const pct = Math.round(ctx.parsed.y);
+                              const curSeries = chart.$curSeries || [];
+                              const curAtPoint = curSeries[ctx.dataIndex] ?? 0;
+                              return `${pct}% | ${curAtPoint}`;
+                          }
                         }
                     }
                 },
-                hover: {
-                    mode: 'nearest',
-                    intersect: true
-                },
+                hover: { mode: 'nearest', intersect: true },
                 elements: { line: { capBezierPoints: true } },
                 scales: {
                     x: { display: false },
-                    y: {
-                        display: false,
-                        min: 0,
-                        max: 105,
-                        grace: '2%'
-                    }
+                    y: { display: false, min: 0, max: 105, grace: '2%' }
                 }
             }
         });
     }
 
-    // --- EXPANDIR INDIVIDUAL ---
+    // --- EXPANDIR ---
     function expandir(id) {
         const card = document.getElementById(id);
         const btn = card.querySelector('.card-button');
@@ -346,7 +335,7 @@
         btn.textContent = card.classList.contains('expanded') ? "CLOSE" : "DETAILS";
     }
 
-    // --- STATUS FIREBASE ---
+    // --- STATUS ---
     db.ref(".info/connected").on("value", (snap) => {
         const statusDiv = document.getElementById('sync-status');
         const statusText = document.getElementById('status-text');
@@ -357,107 +346,134 @@
         }
     });
 
-    // --- ATUALIZAÇÃO DOS KPIs ATUAIS (dashboard_live) + SYNC DOS INPUTS ---
-    db.ref('dashboard_live').on('value', (snapshot) => {
+    // --- ESCRITA DE EVENTOS: toda mudança vira um evento diário ---
+    async function writeEventIfChanged(id, cur, max, pct) {
+        // Evitar duplicado exato imediato: compara com último evento do dia
+        const dayKey = toYMD(new Date());
+        const lastSnap = await db.ref(`dashboard_events/${id}/${dayKey}`).limitToLast(1).once('value');
+        let equal = false;
+        if (lastSnap.exists()) {
+            const last = Object.values(lastSnap.val())[0] || {};
+            if (Number(last.cur) === cur && Number(last.max) === max && Number(last.pct) === pct) {
+                equal = true;
+            }
+        }
+        if (!equal) {
+            const ts = Date.now();
+            await db.ref(`dashboard_events/${id}/${dayKey}`).push({ cur, max, pct, ts });
+        }
+    }
+
+    // --- ATUALIZAÇÃO LIVE + gravação de eventos ---
+    db.ref('dashboard_live').on('value', async (snapshot) => {
         const data = snapshot.val();
-        if (data) {
-            kpis.forEach(id => {
-                const cur = Number(data[id]?.cur || 0);
-                const max = Number(data[id]?.max || 1);
-                const pct = Math.floor((cur / max) * 100);
-                
-                const color = pct < 50 ? 'var(--danger)' : pct < 85 ? 'var(--warning)' : 'var(--success)';
+        if (!data) return;
 
-                // Cards
-                document.getElementById(`v-${id}`).textContent = `${cur} / ${max}`;
-                document.getElementById(`p-${id}`).textContent = `${pct}%`;
-                document.getElementById(`p-${id}`).style.color = color;
-                
-                const bar = document.getElementById(`b-${id}`);
-                bar.style.width = Math.min(pct, 100) + "%";
-                bar.style.backgroundColor = color;
+        for (const id of kpis) {
+            const cur = Number(data[id]?.cur || 0);
+            const max = Number(data[id]?.max || 1);
+            const pct = Math.floor((cur / max) * 100);
 
-                // Inputs do UPDATE SYSTEM (sem atrapalhar quando o usuário está digitando)
-                const inCur = document.getElementById(`in-${id}-cur`);
-                const inMax = document.getElementById(`in-${id}-max`);
-                if (document.activeElement !== inCur) inCur.value = cur;
-                if (document.activeElement !== inMax) inMax.value = max;
+            // UI
+            const color = pct < 50 ? 'var(--danger)' : pct < 85 ? 'var(--warning)' : 'var(--success)';
+            document.getElementById(`v-${id}`).textContent = `${cur} / ${max}`;
+            document.getElementById(`p-${id}`).textContent = `${pct}%`;
+            document.getElementById(`p-${id}`).style.color = color;
+            const bar = document.getElementById(`b-${id}`);
+            bar.style.width = Math.min(pct, 100) + "%";
+            bar.style.backgroundColor = color;
 
-                // Atualiza armazenamentos para tooltip
-                currentMaxByKpi[id] = max;
-                currentCurByKpi[id] = cur;
-            });
+            const inCur = document.getElementById(`in-${id}-cur`);
+            const inMax = document.getElementById(`in-${id}-max`);
+            if (document.activeElement !== inCur) inCur.value = cur;
+            if (document.activeElement !== inMax) inMax.value = max;
+
+            currentMaxByKpi[id] = max;
+            currentCurByKpi[id] = cur;
+
+            // EVENTO do dia
+            await writeEventIfChanged(id, cur, max, pct);
         }
     });
 
-    // --- HISTÓRICO PARA OS GRÁFICOS: ouvir os últimos 6 pontos de cada KPI ---
+    // --- LER eventos dos últimos 7 dias e alimentar os gráficos ---
+    const DAYS_BACK = 7; // ajuste conforme necessário
+    function getLastDaysKeys(n) {
+        const out = [];
+        const now = new Date();
+        for (let i = n - 1; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+            out.push(toYMD(d));
+        }
+        return out;
+    }
+
     kpis.forEach(id => {
         const cId = `chart-${id.toLowerCase()}`;
-        db.ref(`dashboard_history/${id}`).limitToLast(6).on('value', snap => {
-            const vals = snap.val();
-            if (!vals || !chartInstances[cId]) return;
+        // Escuta o nó raiz dos eventos do KPI
+        db.ref(`dashboard_events/${id}`).on('value', snap => {
+            const allDays = snap.val() || {};
+            if (!chartInstances[cId]) return;
 
-            const rows = Object.values(vals).sort((a, b) => (a.ts || 0) - (b.ts || 0));
+            // Seleciona apenas os últimos N dias
+            const wanted = new Set(getLastDaysKeys(DAYS_BACK));
+            const merged = [];
 
-            const labels = rows.map(r => {
-                const d = new Date(r.ts);
-                return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' })
-                    + ' ' +
-                    d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+            Object.entries(allDays).forEach(([day, events]) => {
+                if (!wanted.has(day)) return;
+                const arr = Object.values(events || {});
+                merged.push(...arr);
             });
-            const data = rows.map(r => Number(r.pct || 0));
 
-            const chart = chartInstances[cId];
-            chart.data.labels = labels;
-            chart.data.datasets[0].data = data;
-            // Ajusta o dataset da meta para ter o mesmo comprimento
-            chart.data.datasets[1].data = Array(labels.length).fill(100);
+            // Ordena por timestamp
+            merged.sort((a, b) => Number(a.ts || 0) - Number(b.ts || 0));
 
-            chart.update({ duration: 900, easing: 'easeInOutCubic' });
+            // Monta labels e dados
+            const labels = merged.map(e => fmtLabel(e.ts || Date.now()));
+const data = merged.map(e => Number(e.pct || 0));
+const curSeries = merged.map(e => Number(e.cur || 0)); // série histórica de "cur" ponto a ponto
+
+const chart = chartInstances[cId];
+chart.data.labels = labels;
+chart.data.datasets[0].data = data;
+chart.data.datasets[1].data = Array(labels.length).fill(100);
+
+// Guarda a série de "cur" histórica no próprio chart
+chart.$curSeries = curSeries;
+
+chart.update({ duration: 600, easing: 'easeInOutCubic' });
         });
     });
 
-    // --- ENVIAR DADOS E REGISTRAR HISTÓRICO (valor + data/hora) — somente se mudar ---
+    // --- ENVIAR DADOS (mantém histórico_condicional legacy, opcional) ---
     function sendToCloud() {
         const payload = {};
-        const historyOps = []; // promessas condicionais para histórico
+        const historyOps = [];
 
         kpis.forEach(id => {
             const cur = Number(document.getElementById(`in-${id}-cur`).value) || 0;
             const max = Number(document.getElementById(`in-${id}-max`).value) || 0;
             const pct = max > 0 ? Math.floor((cur / max) * 100) : 0;
 
-            // payload atual sempre é salvo (estado atual do painel)
             payload[id] = { cur, max };
 
-            // histórico: só grava se mudou em relação ao último ponto
+            // Histórico legacy (pode remover se quiser somente events diários)
             const histRef = db.ref(`dashboard_history/${id}`).limitToLast(1);
-
             const op = histRef.once('value').then(snap => {
                 let shouldPush = true;
-
                 if (snap.exists()) {
                     const last = Object.values(snap.val())[0] || {};
-                    const lastCur = Number(last.cur ?? NaN);
-                    const lastMax = Number(last.max ?? NaN);
-                    const lastPct = Number(last.pct ?? NaN);
-
-                    if (lastCur === cur && lastMax === max && lastPct === pct) {
-                        shouldPush = false;
-                    }
+                    if (Number(last.cur) === cur && Number(last.max) === max && Number(last.pct) === pct) shouldPush = false;
                 }
-
                 if (shouldPush) {
                     const ts = Date.now();
                     return db.ref(`dashboard_history/${id}`).push({ cur, max, pct, ts });
                 }
                 return Promise.resolve();
             });
-
             historyOps.push(op);
         });
 
-        // Atualiza o estado atual e depois resolve os históricos condicionais
         db.ref('dashboard_live').set(payload)
             .then(() => Promise.all(historyOps))
             .then(() => {
@@ -483,21 +499,17 @@
 
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
-
         const centerY = canvas.height / 2;
         const color = "rgba(36, 80, 255, 1)";
-
         const waves = [
             { amplitude: Math.max(34, canvas.height * 0.09), frequency: 0.0046, phase: 0,                 lineWidth: 2.8 },
             { amplitude: Math.max(28, canvas.height * 0.08), frequency: 0.0062, phase: Math.PI / 2.6,     lineWidth: 2.6 },
             { amplitude: Math.max(22, canvas.height * 0.07), frequency: 0.0042, phase: Math.PI / 1.6,     lineWidth: 2.4 }
         ];
-
         for (const w of waves) {
             ctx.beginPath();
             ctx.lineWidth = w.lineWidth;
             ctx.strokeStyle = color;
-
             const step = 1;
             for (let x = 0; x < canvas.width; x += step) {
                 const y = centerY + Math.sin(x * w.frequency + count + w.phase) * w.amplitude;
@@ -506,19 +518,15 @@
             }
             ctx.stroke();
         }
-
         const fadePad = 480;
         const fadeWidth = Math.min(80, canvas.width * 0.10);
-
         ctx.save();
         ctx.globalCompositeOperation = 'destination-in';
-
         const fade = ctx.createLinearGradient(fadePad, 0, fadePad + fadeWidth, 0);
         fade.addColorStop(0.00, 'rgba(0,0,0,0)');
         fade.addColorStop(0.50, 'rgba(0,0,0,0.35)');
         fade.addColorStop(0.85, 'rgba(0,0,0,0.85)');
         fade.addColorStop(1.00, 'rgba(0,0,0,1)');
-
         ctx.fillStyle = fade;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
         ctx.restore();
