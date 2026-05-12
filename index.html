@@ -6,10 +6,12 @@
     <title>RAMPDOWN DASHBOARD</title>
     <link rel="icon" type="image/png" href="https://logosandtypes.com/wp-content/uploads/2025/05/MODEC-scaled.png">
     
-    <!-- Scripts Firebase e Gráficos -->
+    <!-- Firebase e Chart.js -->
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS para leitura da IW39 -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 
     <style>
         :root {
@@ -41,19 +43,23 @@
             z-index: 10;
         }
         #bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.3; z-index: 1; }
-        .header-content { position: relative; z-index: 2; display: flex; justify-content: space-between; width: 100%; align-items: center; }
+        header::after{
+          content:""; position:absolute; inset:0; pointer-events:none; z-index:2;
+          background: linear-gradient(90deg, rgba(0,0,0,1) 0%, rgba(0,0,0,.85) 6%, rgba(0,0,0,.35) 14%, rgba(0,0,0,0) 22%, rgba(0,0,0,0) 78%, rgba(0,0,0,.35) 86%, rgba(0,0,0,.85) 94%, rgba(0,0,0,1) 100%);
+        }
+        .header-content { position: relative; z-index: 3; display: flex; justify-content: space-between; width: 100%; align-items: center; }
         .logo-section { display: flex; align-items: center; gap: 20px; }
         .logo-section img { height: 45px; }
         .v-line { width: 2px; height: 35px; background: #fff; }
         .program-title { font-family: var(--font-bold); font-size: 1.4rem; color: #fff; line-height: 1; }
         .subtitle { font-size: 0.75rem; color: rgba(255, 255, 255, 0.6); margin-top: 4px; letter-spacing: 0.5px; }
         
-        #sync-status { font-family: var(--font-bold); font-size: 0.7rem; display: flex; align-items: center; gap: 8px; }
+        #sync-status { font-family: var(--font-bold); font-size: 0.7rem; display: flex; align-items: center; gap: 8px; color:#fff; }
         .dot { width: 8px; height: 8px; border-radius: 50%; background: #444; }
         .online { color: var(--success); } .online .dot { background: var(--success); box-shadow: 0 0 10px var(--success); }
         .offline { color: var(--danger); } .offline .dot { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
 
-        /* DASHBOARD GRID */
+        /* CONTAINER */
         .container { max-width: 1300px; margin: 40px auto; padding: 0 40px; }
         .section-results-title { 
             font-family: var(--font-bold); font-size: 1.6rem; color: #1a1a1a; 
@@ -61,83 +67,44 @@
             border-bottom: 2px solid #f0f0f0; padding-bottom: 10px;
         }
 
-        .kpi-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); 
-            gap: 30px; 
-            align-items: start;
-        }
+        /* GRID */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 30px; align-items: start; }
 
-        /* CARDS */
-        .card { 
-            position: relative; 
-            background: var(--pure-white); 
-            padding: 35px; 
-            border-radius: 20px; 
-            border: 1px solid #f0f0f0;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
+        /* CARD */
+        .card { position: relative; background: var(--pure-white); padding: 35px; border-radius: 20px; border: 1px solid #f0f0f0; box-shadow: 0 4px 15px rgba(0,0,0,0.03); transition: transform 0.3s, box-shadow 0.3s; }
         .card:hover { transform: translateY(-5px); box-shadow: 0 12px 30px rgba(0,0,0,0.08); }
 
-        .card-button {
-            position: absolute; top: 25px; right: 20px; z-index: 10;
-            padding: 6px 12px; background: #fff; border: 1.5px solid #000;
-            border-radius: 6px; font-family: var(--font-bold); font-size: 0.65rem;
-            cursor: pointer; transition: all 0.3s ease;
-        }
+        .card-button { position: absolute; top: 25px; right: 20px; z-index: 10; padding: 6px 12px; background: #fff; border: 1.5px solid #000; border-radius: 6px; font-family: var(--font-bold); font-size: 0.65rem; cursor: pointer; transition: 0.2s; }
         .card-button:hover { background: #000; color: #fff; }
 
-        .percentage { font-family: var(--font-bold); font-size: 4.5rem; line-height: 1; margin-bottom: 10px; transition: color 0.5s ease; }
+        .percentage { font-family: var(--font-bold); font-size: 4.5rem; line-height: 1; margin-bottom: 10px; }
         .value-text { color: var(--text-gray); margin-bottom: 20px; font-size: 0.95rem; }
         .bar-container { background: #f8fafc; height: 8px; border-radius: 4px; overflow: hidden; }
-        .bar-fill { height: 100%; width: 0%; transition: width 1.5s cubic-bezier(0.1, 0, 0, 1), background-color 0.5s ease; }
+        .bar-fill { height: 100%; width: 0%; transition: width 1.2s, background-color 0.4s; }
 
-        /* EXPANSÃO E GRÁFICOS */
-        .card-extra { 
-            max-height: 0; opacity: 0; overflow: hidden; 
-            transition: max-height 0.6s cubic-bezier(0, 1, 0, 1), opacity 0.3s ease; 
-        }
-        .card.expanded .card-extra { 
-            max-height: 300px; opacity: 1; margin-top: 20px; 
-            padding-top: 20px; border-top: 2px #eee; 
-        }
+        .card-extra { max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.6s cubic-bezier(0,1,0,1), opacity 0.3s; }
+        .card.expanded .card-extra { max-height: 300px; opacity: 1; margin-top: 20px; padding-top: 20px; border-top: 2px #eee; }
         .chart-container { height: 130px; width: 100%; }
+        .card-title { font-family: var(--font-bold); font-size: 1.6rem; letter-spacing: 1px; color: var(--text-dark); text-transform: uppercase; margin-bottom: 25px; }
 
-        /* Títulos dos Cards Maiores */
-        .card-title { 
-            font-family: var(--font-bold); 
-            font-size: 1.6rem;
-            letter-spacing: 1px;
-            color: var(--text-dark); 
-            text-transform: uppercase;
-            margin-bottom: 25px;
-        }
-        
-        /* EDITOR PANEL */
-        .editor-panel { 
-            display: none; margin-top: 60px; padding: 40px; 
-            background: #ffffff; border: 1px solid #e2e8f0;
-            border-radius: 20px; box-shadow: 0 20px 40px rgba(0,0,0,0.05);
-        }
-        .editor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 25px; }
-        .input-group { background: #f8fafc; padding: 20px; border-radius: 12px; }
-        .input-group label { font-family: var(--font-bold); font-size: 0.7rem; color: var(--text-gray); display: block; margin-bottom: 10px; text-transform: uppercase; }
-        .input-pair { display: flex; gap: 10px; }
-        input[type="number"] { 
-            padding: 12px; border: 2px solid #e2e8f0; border-radius: 8px; 
-            width: 100%; font-family: var(--font-bold); outline: none; 
-        }
-        input:focus { border-color: var(--accent); }
-        .btn-sync { 
-            background: var(--tech-black); color: white; border: none; padding: 20px; 
-            font-family: var(--font-bold); cursor: pointer; width: 100%; margin-top: 30px; 
-            text-transform: uppercase; border-radius: 12px; transition: 0.3s;
-        }
-        .btn-sync.saved { background: var(--success); }
+        /* DIAG */
+        .diag { margin-top: 16px; background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:12px; }
+        pre { background:#0b1220; color:#d1fae5; padding:10px; border-radius:8px; white-space:pre-wrap; max-height:240px; overflow:auto; font-size:12px; }
 
+        /* Admin button */
         .admin-trigger { position: fixed; bottom: 30px; right: 30px; background: #000; color: #fff; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0.4; z-index: 100; transition: 0.3s; }
         .admin-trigger:hover { opacity: 1; }
+
+        /* UPDATE PANEL (protegido) */
+        .update-panel { 
+          display:none; margin-top: 40px; padding: 20px; 
+          background:#fff; border:1px solid #e5e7eb; border-radius:16px;
+        }
+        .controls { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-bottom:10px; }
+        input[type=file]{padding:8px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;}
+        .btn { padding:10px 14px; border:1px solid #111; background:#111; color:#fff; border-radius:6px; cursor:pointer; }
+        .btn:hover{ background:#000; }
+        .hint { color:#64748b; font-size:12px; }
     </style>
 </head>
 <body>
@@ -170,9 +137,7 @@
             <div class="percentage" id="p-OATS">0%</div>
             <div class="value-text">COMPLETED: <strong id="v-OATS">0 / 0</strong></div>
             <div class="bar-container"><div id="b-OATS" class="bar-fill"></div></div>
-            <div class="card-extra">
-                <div class="chart-container"><canvas id="chart-oats"></canvas></div>
-            </div>
+            <div class="card-extra"><div class="chart-container"><canvas id="chart-oats"></canvas></div></div>
         </div>
 
         <!-- SCE -->
@@ -182,9 +147,7 @@
             <div class="percentage" id="p-SCE">0%</div>
             <div class="value-text">COMPLETED: <strong id="v-SCE">0 / 0</strong></div>
             <div class="bar-container"><div id="b-SCE" class="bar-fill"></div></div>
-            <div class="card-extra">
-                <div class="chart-container"><canvas id="chart-sce"></canvas></div>
-            </div>
+            <div class="card-extra"><div class="chart-container"><canvas id="chart-sce"></canvas></div></div>
         </div>
 
         <!-- CRIT #1 -->
@@ -194,40 +157,24 @@
             <div class="percentage" id="p-CRIT1">0%</div>
             <div class="value-text">COMPLETED: <strong id="v-CRIT1">0 / 0</strong></div>
             <div class="bar-container"><div id="b-CRIT1" class="bar-fill"></div></div>
-            <div class="card-extra">
-                <div class="chart-container"><canvas id="chart-crit1"></canvas></div>
-            </div>
+            <div class="card-extra"><div class="chart-container"><canvas id="chart-crit1"></canvas></div></div>
         </div>
     </div>
 
-    <!-- PAINEL EDITOR -->
-    <div class="editor-panel" id="editor-panel">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:15px;">
-            <h2 style="font-family:var(--font-bold);">UPDATE SYSTEM</h2>
-            <button id="btn-close-editor" class="card-button" onclick="closeEditor()" style="position:static; padding:8px 14px;">
-                CLOSE
-            </button>
-        </div>
-        <div class="editor-grid">
-            <div class="input-group">
-                <label>OATS (Atual / Max)</label>
-                <div class="input-pair"><input type="number" id="in-OATS-cur"><input type="number" id="in-OATS-max"></div>
-            </div>
-            <div class="input-group">
-                <label>SCE (Atual / Max)</label>
-                <div class="input-pair"><input type="number" id="in-SCE-cur"><input type="number" id="in-SCE-max"></div>
-            </div>
-            <div class="input-group">
-                <label>CRIT 1 (Atual / Max)</label>
-                <div class="input-pair"><input type="number" id="in-CRIT1-cur"><input type="number" id="in-CRIT1-max"></div>
-            </div>
-        </div>
-        <button class="btn-sync" id="btn-save" onclick="sendToCloud()">Atualizar Base de Dados</button>
-        <button class="btn-sync" id="btn-reset-all" style="margin-top:12px; background:#ef4444;" onclick="resetAllData()">Resetar Tudo (Apagar Dados)</button>
+    <!-- PAINEL DE UPDATE (PROTEGIDO POR SENHA) -->
+    <div id="update-panel" class="update-panel">
+      <h2 style="font-family:var(--font-bold); margin-bottom:10px;">UPDATE SYSTEM - EXCEL</h2>
+      <div class="controls">
+        <input type="file" id="file-input" accept=".xlsx,.xls,.csv" />
+        <button class="btn" onclick="apply()">Aplicar ao Dashboard</button>
+        <button class="btn" style="background:#ef4444; border-color:#ef4444;" onclick="resetAllData()">Resetar Tudo</button>
+      </div>
+      <div class="hint">Double check the values given from the spreadsheet. </div>
     </div>
 </main>
 
-<div class="admin-trigger" onclick="checkPass()">🔒</div>
+<!-- Botão admin para abrir painel (senha obrigatória) -->
+<div class="admin-trigger" onclick="checkPass()" title="Admin">🔒</div>
 
 <script>
     // --- CONFIG FIREBASE ---
@@ -246,11 +193,7 @@
     const kpis = ['OATS', 'SCE', 'CRIT1'];
     const chartInstances = {};
 
-    // Stores para tooltip atual/cur
-    const currentMaxByKpi = { OATS: 0, SCE: 0, CRIT1: 0 };
-    const currentCurByKpi = { OATS: 0, SCE: 0, CRIT1: 0 };
-
-    // Helpers
+    // Helpers de UI
     const toYMD = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     const fmtLabel = (ts) => {
         const d = new Date(ts);
@@ -270,67 +213,16 @@
             data: {
                 labels: [],
                 datasets: [
-                    {
-                        label,
-                        data: [],
-                        borderColor: color,
-                        borderWidth: 2,
-                        fill: false,
-                        tension: 0.45,
-                        cubicInterpolationMode: 'monotone',
-                        pointRadius: 2,
-                        pointHoverRadius: 5,
-                        pointHitRadius: 10,
-                        pointBackgroundColor: color,
-                        pointBorderColor: color,
-                        clip: 10
-                    },
-                    {
-                        label: 'META 100%',
-                        data: [],
-                        borderColor: 'rgba(0,0,0,0.35)',
-                        borderWidth: 1.5,
-                        borderDash: [6, 4],
-                        pointRadius: 0,
-                        fill: false,
-                        tension: 0,
-                        hoverRadius: 0,
-                        hitRadius: 0
-                    }
+                    { label, data: [], borderColor: color, borderWidth: 2, fill: false, tension: 0.45, pointRadius: 2 },
+                    { label: 'META 100%', data: [], borderColor: 'rgba(0,0,0,0.35)', borderWidth: 1.5, borderDash: [6, 4], pointRadius: 0 }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                layout: { padding: { top: 8, bottom: 4 } },
-                animation: { duration: 900, easing: 'easeInOutCubic' },
-                interaction: { mode: 'nearest', intersect: true, axis: 'x' },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        enabled: true,
-                        position: 'nearest',
-                        intersect: true,
-                        filter: (item) => item.datasetIndex === 0,
-                        callbacks: {
-                            title: (items) => items[0]?.label || '',
-                            label: (ctx) => {
-                                // Usa o cur histórico do próprio ponto
-                                const chart = ctx.chart;
-                                const pct = Math.round(ctx.parsed.y);
-                                const curSeries = chart.$curSeries || [];
-                                const curAtPoint = curSeries[ctx.dataIndex] ?? 0;
-                                return `${pct}% | ${curAtPoint}`;
-                            }
-                        }
-                    }
-                },
-                hover: { mode: 'nearest', intersect: true },
-                elements: { line: { capBezierPoints: true } },
-                scales: {
-                    x: { display: false },
-                    y: { display: false, min: 0, max: 105, grace: '2%' }
-                }
+                plugins: { legend: { display: false } },
+                interaction: { mode:'nearest', intersect:true, axis:'x' },
+                scales: { x: { display: false }, y: { display: false, min: 0, max: 105 } }
             }
         });
     }
@@ -354,16 +246,14 @@
         }
     });
 
-    // --- ESCRITA DE EVENTOS: toda mudança vira um evento diário ---
+    // --- EVENTOS intradiários ---
     async function writeEventIfChanged(id, cur, max, pct) {
         const dayKey = toYMD(new Date());
         const lastSnap = await db.ref(`dashboard_events/${id}/${dayKey}`).limitToLast(1).once('value');
         let equal = false;
         if (lastSnap.exists()) {
             const last = Object.values(lastSnap.val())[0] || {};
-            if (Number(last.cur) === cur && Number(last.max) === max && Number(last.pct) === pct) {
-                equal = true;
-            }
+            if (Number(last.cur) === cur && Number(last.max) === max && Number(last.pct) === pct) equal = true;
         }
         if (!equal) {
             const ts = Date.now();
@@ -371,17 +261,15 @@
         }
     }
 
-    // --- ATUALIZAÇÃO LIVE + gravação de eventos ---
+    // --- LIVE KPIs (somente leitura para cards) ---
     db.ref('dashboard_live').on('value', async (snapshot) => {
         const data = snapshot.val();
         if (!data) return;
-
         for (const id of kpis) {
             const cur = Number(data[id]?.cur || 0);
             const max = Number(data[id]?.max || 1);
             const pct = Math.floor((cur / max) * 100);
 
-            // UI
             const color = pct < 50 ? 'var(--danger)' : pct < 85 ? 'var(--warning)' : 'var(--success)';
             document.getElementById(`v-${id}`).textContent = `${cur} / ${max}`;
             document.getElementById(`p-${id}`).textContent = `${pct}%`;
@@ -390,20 +278,11 @@
             bar.style.width = Math.min(pct, 100) + "%";
             bar.style.backgroundColor = color;
 
-            const inCur = document.getElementById(`in-${id}-cur`);
-            const inMax = document.getElementById(`in-${id}-max`);
-            if (document.activeElement !== inCur) inCur.value = cur;
-            if (document.activeElement !== inMax) inMax.value = max;
-
-            currentMaxByKpi[id] = max;
-            currentCurByKpi[id] = cur;
-
-            // Evento intradiário
             await writeEventIfChanged(id, cur, max, pct);
         }
     });
 
-    // --- LER eventos dos últimos 7 dias e alimentar os gráficos ---
+    // --- GRÁFICOS: últimos 7 dias ---
     const DAYS_BACK = 7;
     function getLastDaysKeys(n) {
         const out = [];
@@ -414,147 +293,195 @@
         }
         return out;
     }
-
     kpis.forEach(id => {
         const cId = `chart-${id.toLowerCase()}`;
         db.ref(`dashboard_events/${id}`).on('value', snap => {
             const allDays = snap.val() || {};
             if (!chartInstances[cId]) return;
-
             const wanted = new Set(getLastDaysKeys(DAYS_BACK));
             const merged = [];
-
             Object.entries(allDays).forEach(([day, events]) => {
                 if (!wanted.has(day)) return;
-                const arr = Object.values(events || {});
-                merged.push(...arr);
+                merged.push(...Object.values(events || {}));
             });
-
-            // Ordena por ts
             merged.sort((a, b) => Number(a.ts || 0) - Number(b.ts || 0));
-
-            // Monta labels, pct e cur históricos
             const labels = merged.map(e => fmtLabel(e.ts || Date.now()));
             const data = merged.map(e => Number(e.pct || 0));
-            const curSeries = merged.map(e => Number(e.cur || 0));
-
             const chart = chartInstances[cId];
             chart.data.labels = labels;
             chart.data.datasets[0].data = data;
             chart.data.datasets[1].data = Array(labels.length).fill(100);
-            chart.$curSeries = curSeries; // série histórica para tooltip
-            chart.update({ duration: 600, easing: 'easeInOutCubic' });
+            chart.update();
         });
     });
 
-    // --- ENVIAR DADOS (mantém histórico condicional legacy, opcional) ---
-    function sendToCloud() {
-        const payload = {};
-        const historyOps = [];
+    // ================== EXTRATOR INFALÍVEL (mês atual; inclui 01 em qualquer forma) ==================
+    let workbook = null;
+    let computed = { OATS:{done:0,total:0}, SCE:{done:0,total:0}, CRIT1:{done:0,total:0} };
 
-        kpis.forEach(id => {
-            const cur = Number(document.getElementById(`in-${id}-cur`).value) || 0;
-            const max = Number(document.getElementById(`in-${id}-max`).value) || 0;
-            const pct = max > 0 ? Math.floor((cur / max) * 100) : 0;
+    // Índices das colunas na IW39 (ajuste se necessário)
+    const IDX_A=0, IDX_D=3, IDX_J=9, IDX_L=11;
 
-            payload[id] = { cur, max };
+    document.getElementById('file-input').addEventListener('change', async (ev)=>{
+      const file=ev.target.files?.[0]; if(!file) return;
+      const buf=await file.arrayBuffer();
+      // Usamos raw:true e sem cellDates para obter strings/seriais exatamente como estão
+      workbook = XLSX.read(buf,{type:'array'});
+      alert('IW39 carregada. Clique em Aplicar ao Dashboard.');
+    });
 
-            // Histórico legacy (pode remover)
-            const histRef = db.ref(`dashboard_history/${id}`).limitToLast(1);
-            const op = histRef.once('value').then(snap => {
-                let shouldPush = true;
-                if (snap.exists()) {
-                    const last = Object.values(snap.val())[0] || {};
-                    if (Number(last.cur) === cur && Number(last.max) === max && Number(last.pct) === pct) shouldPush = false;
-                }
-                if (shouldPush) {
-                    const ts = Date.now();
-                    return db.ref(`dashboard_history/${id}`).push({ cur, max, pct, ts });
-                }
-                return Promise.resolve();
-            });
-            historyOps.push(op);
-        });
+    // Utils de data robustos
+    function normWS(s){ return (s==null?'':String(s)).replace(/\u00A0/g,' ').trim(); }
+    function zeroLocal(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0,0,0,0); }
+    function monthRangeCurrent(){
+      const now=new Date();
+      const start=new Date(now.getFullYear(), now.getMonth(), 1, 0,0,0,0);
+      const end=new Date(now.getFullYear(), now.getMonth()+1, 0, 23,59,59,999);
+      return { start, end, month:now.getMonth(), year:now.getFullYear() };
+    }
+    function sameMonthYear(d, m, y){ return d && d.getMonth()===m && d.getFullYear()===y; }
 
-        db.ref('dashboard_live').set(payload)
-            .then(() => Promise.all(historyOps))
-            .then(() => {
-                const b = document.getElementById('btn-save');
-                b.classList.add('saved'); b.textContent = "SUCESSO!";
-                setTimeout(() => { b.classList.remove('saved'); b.textContent = "Atualizar Base de Dados"; }, 2000);
-            })
-            .catch(err => {
-                console.error('Erro ao atualizar:', err);
-                alert('Erro ao atualizar a base de dados/histórico.');
-            });
+    // Heurística para mm/dd/yyyy
+    function looksUSmdy(s){
+      const m = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/.exec(s);
+      if (!m) return false;
+      const a=+m[1], b=+m[2];
+      if (a<=12 && b>12) return true;
+      return false;
     }
 
-    // --- RESETAR TUDO: zera live e apaga históricos ---
-    async function resetAllData() {
-        const confirmText = "Tem certeza que deseja APAGAR TODOS os dados?\n" +
-                            "- dashboard_live (cur será zerado; max mantido)\n" +
-                            "- dashboard_history (apagado)\n" +
-                            "- dashboard_daily (apagado)\n" +
-                            "- dashboard_events (apagado)\n\n" +
-                            "Esta ação não pode ser desfeita.";
-        if (!confirm(confirmText)) return;
+    // Serial Excel
+    const EXCEL_1904_SYSTEM = false;
+    function fromExcelSerial(n){
+      const base = EXCEL_1904_SYSTEM ? new Date(Date.UTC(1904,0,1)) : new Date(Date.UTC(1899,11,30));
+      const ms = Math.round(n*86400000);
+      return new Date(base.getTime()+ms);
+    }
 
-        try {
-            // Preserva max ao zerar live
-            const liveSnap = await db.ref('dashboard_live').once('value');
-            const liveVal = liveSnap.val() || {};
-            const newLive = {};
-            ['OATS', 'SCE', 'CRIT1'].forEach(kpi => {
-                const existingMax = Number(liveVal[kpi]?.max || 0);
-                newLive[kpi] = { cur: 0, max: existingMax };
-            });
+    // Parser de data infalível
+    function parseDateAny(v){
+      if (v instanceof Date && !isNaN(v.getTime())) return v;
+      if (typeof v==='number' && isFinite(v)){
+        const dt = fromExcelSerial(v);
+        if (!isNaN(dt.getTime())) return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+      }
+      const s = normWS(v);
+      if (!s) return null;
 
-            const now = new Date();
-            const currentMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
-
-            const updates = {};
-            updates['/dashboard_live'] = newLive;
-            updates['/dashboard_history'] = null;
-            updates['/dashboard_daily'] = null;
-            updates['/dashboard_events'] = null;
-            updates['/meta/lastResetMonth'] = currentMonth;
-
-            await db.ref().update(updates);
-
-            // Feedback
-            const btn = document.getElementById('btn-reset-all');
-            btn.textContent = "Reset OK";
-            btn.style.background = '#10b981';
-            setTimeout(() => {
-                btn.textContent = "Resetar Tudo (Apagar Dados)";
-                btn.style.background = '#ef4444';
-            }, 2000);
-
-            // Atualiza inputs
-            ['OATS', 'SCE', 'CRIT1'].forEach(id => {
-                const inCur = document.getElementById(`in-${id}-cur`);
-                const inMax = document.getElementById(`in-${id}-max`);
-                if (inCur) inCur.value = 0;
-                if (inMax) inMax.value = Number(liveVal[id]?.max || 0);
-            });
-
-            alert("Todos os dados foram resetados com sucesso.");
-        } catch (err) {
-            console.error("Erro ao resetar tudo:", err);
-            alert("Falha ao resetar os dados. Veja o console para detalhes.");
+      let m = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T].*)?$/.exec(s);
+      if (m){
+        const y=+m[1], mo=+m[2], d=+m[3];
+        const dt = new Date(y, mo-1, d, 0,0,0,0);
+        if (!isNaN(dt.getTime())) return dt;
+      }
+      m = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:[ T].*)?$/.exec(s);
+      if (m && !looksUSmdy(s)){
+        const d=+m[1], mo=+m[2], y = +m[3] < 100 ? (2000 + (+m[3])) : +m[3];
+        const dt = new Date(y, mo-1, d, 0,0,0,0);
+        if (!isNaN(dt.getTime())) return dt;
+      }
+      if (looksUSmdy(s)){
+        const m2=/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:[ T].*)?$/.exec(s);
+        if (m2){
+          const mo=+m2[1], d=+m2[2], y= +m2[3] < 100 ? (2000 + (+m2[3])) : +m2[3];
+          const dt=new Date(y, mo-1, d, 0,0,0,0);
+          if (!isNaN(dt.getTime())) return dt;
         }
+      }
+      const nat = new Date(s);
+      if (!isNaN(nat.getTime())){
+        const y=nat.getFullYear(), mo=nat.getMonth(), d=nat.getDate();
+        return new Date(y, mo, d, 0,0,0,0);
+      }
+      return null;
+    }
+
+    // Matchers de KPI e status
+    const norm=(s)=>(s==null?'':String(s)).toUpperCase().replace(/\u00A0/g,' ').replace(/[–—−]/g,'-').replace(/\s+/g,' ').trim();
+    function isTECO(v){ return /\bTECO\b/.test(norm(v)); }
+    function matchOATS(v){ const f=norm(v); const d='[\\s,;:\\/|()\\[\\]{}<>=\\"\\\'.-]'; return new RegExp(`(^|${d})OATS(${d}|$)`).test(f); }
+    function matchGENR0(v){ const f=norm(v); const d='[\\s,;:\\/|()\\[\\]{}<>=\\"\\\'.-]'; return new RegExp(`(^|${d})GENR-0(${d}|$)`).test(f); }
+    function matchGENR1(v){ const f=norm(v); const d='[\\s,;:\\/|()\\[\\]{}<>=\\"\\\'.-]'; return new RegExp(`(^|${d})GENR-1(${d}|$)`).test(f); }
+
+    // Processar arquivo e retornar contagem
+    function computeFromWorkbook(wb){
+      const { month, year } = monthRangeCurrent();
+      const sheet=wb.SheetNames[0];
+      const ws=wb.Sheets[sheet];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
+      if (!rows.length) throw new Error('Aba vazia/incorreta');
+
+      const first = parseDateAny(rows[0]?.[IDX_L]);
+      const begin = (first && !isNaN(first)) ? 0 : 1;
+
+      const counters = { OATS:{done:0,total:0}, SCE:{done:0,total:0}, CRIT1:{done:0,total:0} };
+
+      for (let i=begin;i<rows.length;i++){
+        const r=rows[i];
+        if (!r || r.length<=Math.max(IDX_A,IDX_D,IDX_J,IDX_L)) continue;
+        const rawL = r[IDX_L];
+        const dt = parseDateAny(rawL);
+        if (!dt) continue;
+        const d0 = zeroLocal(dt);
+        if (!sameMonthYear(d0, month, year)) continue;
+
+        // Contagem por linha
+        if (matchOATS(r[IDX_D])){ counters.OATS.total++; if (isTECO(r[IDX_J])) counters.OATS.done++; }
+        else if (matchGENR0(r[IDX_D])){ counters.SCE.total++; if (isTECO(r[IDX_J])) counters.SCE.done++; }
+        else if (matchGENR1(r[IDX_D])){ counters.CRIT1.total++; if (isTECO(r[IDX_J])) counters.CRIT1.done++; }
+      }
+      return counters;
+    }
+
+    async function apply(){
+      if (!workbook){ alert('Carregue a IW39 no painel de atualização.'); return; }
+      try{
+        computed = computeFromWorkbook(workbook);
+        const payload = {
+          OATS: { cur: computed.OATS.done,  max: computed.OATS.total },
+          SCE:  { cur: computed.SCE.done,   max: computed.SCE.total },
+          CRIT1:{ cur: computed.CRIT1.done, max: computed.CRIT1.total }
+        };
+        await db.ref('dashboard_live').set(payload);
+        alert('KPIs aplicados ao dashboard.');
+      }catch(e){
+        console.error(e); alert('Falha ao aplicar: ' + (e && e.message ? e.message : e));
+      }
+    }
+
+    // --- RESET ALL (via Admin) ---
+    async function resetAllData() {
+      const confirmText = "Tem certeza que deseja APAGAR TODOS os dados?\n- dashboard_live (cur=0, max mantido)\n- dashboard_history\n- dashboard_daily\n- dashboard_events";
+      if (!confirm(confirmText)) return;
+      try{
+        const liveSnap = await db.ref('dashboard_live').once('value');
+        const liveVal = liveSnap.val() || {};
+        const newLive = {};
+        ['OATS','SCE','CRIT1'].forEach(k=>{ newLive[k]={cur:0, max:Number(liveVal[k]?.max||0)}; });
+        await db.ref().update({
+          '/dashboard_live': newLive,
+          '/dashboard_history': null,
+          '/dashboard_daily': null,
+          '/dashboard_events': null
+        });
+        alert('Reset concluído.');
+      }catch(e){ console.error(e); alert('Erro ao resetar.'); }
+    }
+
+    // --- PROTEÇÃO POR SENHA PARA MOSTRAR O PAINEL DE UPDATE ---
+    function checkPass(){
+      if (prompt('Senha:') === '222324'){
+        const panel = document.getElementById('update-panel');
+        panel.style.display = 'block';
+        window.scrollTo({ top: panel.offsetTop - 20, behavior: 'smooth' });
+      }
     }
 
     // --- HEADER WAVES ---
     const canvas = document.getElementById('bg-canvas');
     const ctx = canvas.getContext('2d');
     let count = 0;
-
-    function init() {
-        canvas.width = window.innerWidth;
-        canvas.height = 100;
-    }
-
+    function init() { canvas.width = window.innerWidth; canvas.height = 100; }
     function draw() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         const centerY = canvas.height / 2;
@@ -568,14 +495,13 @@
             ctx.beginPath();
             ctx.lineWidth = w.lineWidth;
             ctx.strokeStyle = color;
-            const step = 1;
-            for (let x = 0; x < canvas.width; x += step) {
+            for (let x = 0; x < canvas.width; x += 1) {
                 const y = centerY + Math.sin(x * w.frequency + count + w.phase) * w.amplitude;
-                if (x === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
+                if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
             }
             ctx.stroke();
         }
+        // Fade lateral via máscara
         const fadePad = 480;
         const fadeWidth = Math.min(80, canvas.width * 0.10);
         ctx.save();
@@ -592,32 +518,11 @@
         count += 0.01;
         requestAnimationFrame(draw);
     }
-
     window.addEventListener('resize', init);
-    init();
-    draw();
-
-    // --- ADMIN / EDITOR ---
-    function checkPass() {
-        if (prompt("Senha:") === "222324") {
-            openEditor();
-        }
-    }
-    function openEditor() {
-        const panel = document.getElementById('editor-panel');
-        panel.style.display = 'block';
-        window.scrollTo({ top: panel.offsetTop - 20, behavior: 'smooth' });
-    }
-    function closeEditor() {
-        const panel = document.getElementById('editor-panel');
-        panel.style.display = 'none';
-    }
-
     window.onload = () => {
         init(); draw();
         const meses = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
         document.getElementById('main-results-title').textContent = `${meses[new Date().getMonth()]} RESULTS`;
-        
         initChart('chart-oats', 'OATS', '#2563eb');
         initChart('chart-sce', 'SCE', '#10b981');
         initChart('chart-crit1', 'CRIT', '#f59e0b');
