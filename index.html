@@ -29,6 +29,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { background: #fcfcfc; color: var(--text-dark); min-height: 100vh; font-family: var(--font-light); }
 
+        /* HEADER */
         header {
             position: relative;
             background: var(--tech-black);
@@ -52,6 +53,7 @@
         .online { color: var(--success); } .online .dot { background: var(--success); box-shadow: 0 0 10px var(--success); }
         .offline { color: var(--danger); } .offline .dot { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
 
+        /* DASHBOARD GRID */
         .container { max-width: 1300px; margin: 40px auto; padding: 0 40px; }
         .section-results-title { 
             font-family: var(--font-bold); font-size: 1.6rem; color: #1a1a1a; 
@@ -66,6 +68,7 @@
             align-items: start;
         }
 
+        /* CARDS */
         .card { 
             position: relative; 
             background: var(--pure-white); 
@@ -90,6 +93,7 @@
         .bar-container { background: #f8fafc; height: 8px; border-radius: 4px; overflow: hidden; }
         .bar-fill { height: 100%; width: 0%; transition: width 1.5s cubic-bezier(0.1, 0, 0, 1), background-color 0.5s ease; }
 
+        /* EXPANSÃO E GRÁFICOS */
         .card-extra { 
             max-height: 0; opacity: 0; overflow: hidden; 
             transition: max-height 0.6s cubic-bezier(0, 1, 0, 1), opacity 0.3s ease; 
@@ -100,6 +104,7 @@
         }
         .chart-container { height: 130px; width: 100%; }
 
+        /* Títulos dos Cards Maiores */
         .card-title { 
             font-family: var(--font-bold); 
             font-size: 1.6rem;
@@ -109,6 +114,7 @@
             margin-bottom: 25px;
         }
         
+        /* EDITOR PANEL */
         .editor-panel { 
             display: none; margin-top: 60px; padding: 40px; 
             background: #ffffff; border: 1px solid #e2e8f0;
@@ -217,6 +223,7 @@
             </div>
         </div>
         <button class="btn-sync" id="btn-save" onclick="sendToCloud()">Atualizar Base de Dados</button>
+        <button class="btn-sync" id="btn-reset-all" style="margin-top:12px; background:#ef4444;" onclick="resetAllData()">Resetar Tudo (Apagar Dados)</button>
     </div>
 </main>
 
@@ -239,7 +246,7 @@
     const kpis = ['OATS', 'SCE', 'CRIT1'];
     const chartInstances = {};
 
-    // Stores para tooltip
+    // Stores para tooltip atual/cur
     const currentMaxByKpi = { OATS: 0, SCE: 0, CRIT1: 0 };
     const currentCurByKpi = { OATS: 0, SCE: 0, CRIT1: 0 };
 
@@ -308,12 +315,13 @@
                         callbacks: {
                             title: (items) => items[0]?.label || '',
                             label: (ctx) => {
-                              const chart = ctx.chart;
-                              const pct = Math.round(ctx.parsed.y);
-                              const curSeries = chart.$curSeries || [];
-                              const curAtPoint = curSeries[ctx.dataIndex] ?? 0;
-                              return `${pct}% | ${curAtPoint}`;
-                          }
+                                // Usa o cur histórico do próprio ponto
+                                const chart = ctx.chart;
+                                const pct = Math.round(ctx.parsed.y);
+                                const curSeries = chart.$curSeries || [];
+                                const curAtPoint = curSeries[ctx.dataIndex] ?? 0;
+                                return `${pct}% | ${curAtPoint}`;
+                            }
                         }
                     }
                 },
@@ -348,7 +356,6 @@
 
     // --- ESCRITA DE EVENTOS: toda mudança vira um evento diário ---
     async function writeEventIfChanged(id, cur, max, pct) {
-        // Evitar duplicado exato imediato: compara com último evento do dia
         const dayKey = toYMD(new Date());
         const lastSnap = await db.ref(`dashboard_events/${id}/${dayKey}`).limitToLast(1).once('value');
         let equal = false;
@@ -391,13 +398,13 @@
             currentMaxByKpi[id] = max;
             currentCurByKpi[id] = cur;
 
-            // EVENTO do dia
+            // Evento intradiário
             await writeEventIfChanged(id, cur, max, pct);
         }
     });
 
     // --- LER eventos dos últimos 7 dias e alimentar os gráficos ---
-    const DAYS_BACK = 7; // ajuste conforme necessário
+    const DAYS_BACK = 7;
     function getLastDaysKeys(n) {
         const out = [];
         const now = new Date();
@@ -410,12 +417,10 @@
 
     kpis.forEach(id => {
         const cId = `chart-${id.toLowerCase()}`;
-        // Escuta o nó raiz dos eventos do KPI
         db.ref(`dashboard_events/${id}`).on('value', snap => {
             const allDays = snap.val() || {};
             if (!chartInstances[cId]) return;
 
-            // Seleciona apenas os últimos N dias
             const wanted = new Set(getLastDaysKeys(DAYS_BACK));
             const merged = [];
 
@@ -425,27 +430,24 @@
                 merged.push(...arr);
             });
 
-            // Ordena por timestamp
+            // Ordena por ts
             merged.sort((a, b) => Number(a.ts || 0) - Number(b.ts || 0));
 
-            // Monta labels e dados
+            // Monta labels, pct e cur históricos
             const labels = merged.map(e => fmtLabel(e.ts || Date.now()));
-const data = merged.map(e => Number(e.pct || 0));
-const curSeries = merged.map(e => Number(e.cur || 0)); // série histórica de "cur" ponto a ponto
+            const data = merged.map(e => Number(e.pct || 0));
+            const curSeries = merged.map(e => Number(e.cur || 0));
 
-const chart = chartInstances[cId];
-chart.data.labels = labels;
-chart.data.datasets[0].data = data;
-chart.data.datasets[1].data = Array(labels.length).fill(100);
-
-// Guarda a série de "cur" histórica no próprio chart
-chart.$curSeries = curSeries;
-
-chart.update({ duration: 600, easing: 'easeInOutCubic' });
+            const chart = chartInstances[cId];
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = data;
+            chart.data.datasets[1].data = Array(labels.length).fill(100);
+            chart.$curSeries = curSeries; // série histórica para tooltip
+            chart.update({ duration: 600, easing: 'easeInOutCubic' });
         });
     });
 
-    // --- ENVIAR DADOS (mantém histórico_condicional legacy, opcional) ---
+    // --- ENVIAR DADOS (mantém histórico condicional legacy, opcional) ---
     function sendToCloud() {
         const payload = {};
         const historyOps = [];
@@ -457,7 +459,7 @@ chart.update({ duration: 600, easing: 'easeInOutCubic' });
 
             payload[id] = { cur, max };
 
-            // Histórico legacy (pode remover se quiser somente events diários)
+            // Histórico legacy (pode remover)
             const histRef = db.ref(`dashboard_history/${id}`).limitToLast(1);
             const op = histRef.once('value').then(snap => {
                 let shouldPush = true;
@@ -485,6 +487,62 @@ chart.update({ duration: 600, easing: 'easeInOutCubic' });
                 console.error('Erro ao atualizar:', err);
                 alert('Erro ao atualizar a base de dados/histórico.');
             });
+    }
+
+    // --- RESETAR TUDO: zera live e apaga históricos ---
+    async function resetAllData() {
+        const confirmText = "Tem certeza que deseja APAGAR TODOS os dados?\n" +
+                            "- dashboard_live (cur será zerado; max mantido)\n" +
+                            "- dashboard_history (apagado)\n" +
+                            "- dashboard_daily (apagado)\n" +
+                            "- dashboard_events (apagado)\n\n" +
+                            "Esta ação não pode ser desfeita.";
+        if (!confirm(confirmText)) return;
+
+        try {
+            // Preserva max ao zerar live
+            const liveSnap = await db.ref('dashboard_live').once('value');
+            const liveVal = liveSnap.val() || {};
+            const newLive = {};
+            ['OATS', 'SCE', 'CRIT1'].forEach(kpi => {
+                const existingMax = Number(liveVal[kpi]?.max || 0);
+                newLive[kpi] = { cur: 0, max: existingMax };
+            });
+
+            const now = new Date();
+            const currentMonth = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+
+            const updates = {};
+            updates['/dashboard_live'] = newLive;
+            updates['/dashboard_history'] = null;
+            updates['/dashboard_daily'] = null;
+            updates['/dashboard_events'] = null;
+            updates['/meta/lastResetMonth'] = currentMonth;
+
+            await db.ref().update(updates);
+
+            // Feedback
+            const btn = document.getElementById('btn-reset-all');
+            btn.textContent = "Reset OK";
+            btn.style.background = '#10b981';
+            setTimeout(() => {
+                btn.textContent = "Resetar Tudo (Apagar Dados)";
+                btn.style.background = '#ef4444';
+            }, 2000);
+
+            // Atualiza inputs
+            ['OATS', 'SCE', 'CRIT1'].forEach(id => {
+                const inCur = document.getElementById(`in-${id}-cur`);
+                const inMax = document.getElementById(`in-${id}-max`);
+                if (inCur) inCur.value = 0;
+                if (inMax) inMax.value = Number(liveVal[id]?.max || 0);
+            });
+
+            alert("Todos os dados foram resetados com sucesso.");
+        } catch (err) {
+            console.error("Erro ao resetar tudo:", err);
+            alert("Falha ao resetar os dados. Veja o console para detalhes.");
+        }
     }
 
     // --- HEADER WAVES ---
