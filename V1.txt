@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RAMPDOWN DASHBOARD</title>
+    <link rel="icon" type="image/png" href="https://logosandtypes.com/wp-content/uploads/2025/05/MODEC-scaled.png">
+    
+    <!-- Firebase e Chart.js -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SheetJS para leitura da IW39 -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+    <style>
+        :root {
+            --tech-black: #000000;
+            --pure-white: #ffffff;
+            --accent: #2563eb;
+            --text-dark: #000000;
+            --text-gray: #64748b;
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --border: #f1f5f9;
+            --font-bold: 'Bahnschrift SemiBold', 'Segoe UI', sans-serif;
+            --font-light: 'Bahnschrift Light', 'Segoe UI', sans-serif;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: #fcfcfc; color: var(--text-dark); min-height: 100vh; font-family: var(--font-light); }
+
+        /* HEADER */
+        header {
+            position: relative;
+            background: var(--tech-black);
+            height: 100px;
+            display: flex;
+            align-items: center;
+            padding: 0 50px;
+            overflow: hidden;
+            z-index: 10;
+        }
+        #bg-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0.3; z-index: 1; }
+        header::after{
+          content:""; position:absolute; inset:0; pointer-events:none; z-index:2;
+          background: linear-gradient(90deg, rgba(0,0,0,1) 0%, rgba(0,0,0,.85) 6%, rgba(0,0,0,.35) 14%, rgba(0,0,0,0) 22%, rgba(0,0,0,0) 78%, rgba(0,0,0,.35) 86%, rgba(0,0,0,.85) 94%, rgba(0,0,0,1) 100%);
+        }
+        .header-content { position: relative; z-index: 3; display: flex; justify-content: space-between; width: 100%; align-items: center; }
+        .logo-section { display: flex; align-items: center; gap: 20px; }
+        .logo-section img { height: 45px; }
+        .v-line { width: 2px; height: 35px; background: #fff; }
+        .program-title { font-family: var(--font-bold); font-size: 1.4rem; color: #fff; line-height: 1; }
+        .subtitle { font-size: 0.75rem; color: rgba(255, 255, 255, 0.6); margin-top: 4px; letter-spacing: 0.5px; }
+        
+        #sync-status { font-family: var(--font-bold); font-size: 0.7rem; display: flex; align-items: center; gap: 8px; color:#fff; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; background: #444; }
+        .online { color: var(--success); } .online .dot { background: var(--success); box-shadow: 0 0 10px var(--success); }
+        .offline { color: var(--danger); } .offline .dot { background: var(--danger); box-shadow: 0 0 10px var(--danger); }
+
+        /* CONTAINER */
+        .container { max-width: 1300px; margin: 40px auto; padding: 0 40px; }
+        .section-results-title { 
+            font-family: var(--font-bold); font-size: 1.6rem; color: #1a1a1a; 
+            text-transform: uppercase; letter-spacing: 4px; margin-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0; padding-bottom: 10px;
+        }
+
+        /* GRID */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 30px; align-items: start; }
+
+        /* CARD */
+        .card { position: relative; background: var(--pure-white); padding: 35px; border-radius: 20px; border: 1px solid #f0f0f0; box-shadow: 0 4px 15px rgba(0,0,0,0.03); transition: transform 0.3s, box-shadow 0.3s; }
+        .card:hover { transform: translateY(-5px); box-shadow: 0 12px 30px rgba(0,0,0,0.08); }
+
+        .card-button { position: absolute; top: 25px; right: 20px; z-index: 10; padding: 6px 12px; background: #fff; border: 1.5px solid #000; border-radius: 6px; font-family: var(--font-bold); font-size: 0.65rem; cursor: pointer; transition: 0.2s; }
+        .card-button:hover { background: #000; color: #fff; }
+
+        .percentage { font-family: var(--font-bold); font-size: 4.5rem; line-height: 1; margin-bottom: 10px; }
+        .value-text { color: var(--text-gray); margin-bottom: 20px; font-size: 0.95rem; }
+        .bar-container { background: #f8fafc; height: 8px; border-radius: 4px; overflow: hidden; }
+        .bar-fill { height: 100%; width: 0%; transition: width 1.2s, background-color 0.4s; }
+
+        .card-extra { max-height: 0; opacity: 0; overflow: hidden; transition: max-height 0.6s cubic-bezier(0,1,0,1), opacity 0.3s; }
+        .card.expanded .card-extra { max-height: 300px; opacity: 1; margin-top: 20px; padding-top: 20px; border-top: 2px #eee; }
+        .chart-container { height: 130px; width: 100%; }
+        .card-title { font-family: var(--font-bold); font-size: 1.6rem; letter-spacing: 1px; color: var(--text-dark); text-transform: uppercase; margin-bottom: 25px; }
+
+        /* DIAG */
+        .diag { margin-top: 16px; background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:12px; }
+        pre { background:#0b1220; color:#d1fae5; padding:10px; border-radius:8px; white-space:pre-wrap; max-height:240px; overflow:auto; font-size:12px; }
+
+        /* Admin button */
+        .admin-trigger { position: fixed; bottom: 30px; right: 30px; background: #000; color: #fff; width: 45px; height: 45px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0.4; z-index: 100; transition: 0.3s; }
+        .admin-trigger:hover { opacity: 1; }
+
+        /* UPDATE PANEL (protegido) */
+        .update-panel { 
+          display:none; margin-top: 40px; padding: 20px; 
+          background:#fff; border:1px solid #e5e7eb; border-radius:16px;
+        }
+        .controls { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; margin-bottom:10px; }
+        input[type=file]{padding:8px;border:1px solid #e2e8f0;border-radius:8px;background:#fff;}
+        .btn { padding:10px 14px; border:1px solid #111; background:#111; color:#fff; border-radius:6px; cursor:pointer; }
+        .btn:hover{ background:#000; }
+        .hint { color:#64748b; font-size:12px; }
+    </style>
+</head>
+<body>
+
+<header>
+    <canvas id="bg-canvas"></canvas>
+    <div class="header-content">
+        <div class="logo-section">
+            <img src="https://i0.wp.com/gcci.gy/wp-content/uploads/2025/01/logo-MODEC-1-Faneeza-Karim.png?ssl=1" alt="Logo">
+            <div class="v-line"></div>
+            <div class="title-group">
+                <div class="program-title">RAMPDOWN DASHBOARD</div>
+                <div class="subtitle">KPI Monitoring System • BETA</div>
+            </div>
+        </div>
+        <div id="sync-status" class="offline">
+            <div class="dot"></div> <span id="status-text">STATUS: CONNECTING</span>
+        </div>
+    </div>
+</header>
+
+<main class="container">
+    <h1 id="main-results-title" class="section-results-title">LOADING RESULTS</h1>
+
+    <div class="kpi-grid">
+        <!-- OATS -->
+        <div class="card" id="card-oats">
+            <button class="card-button" onclick="expandir('card-oats')">DETAILS</button>
+            <div class="card-title">OATS</div>
+            <div class="percentage" id="p-OATS">0%</div>
+            <div class="value-text">COMPLETED: <strong id="v-OATS">0 / 0</strong></div>
+            <div class="bar-container"><div id="b-OATS" class="bar-fill"></div></div>
+            <div class="card-extra"><div class="chart-container"><canvas id="chart-oats"></canvas></div></div>
+        </div>
+
+        <!-- SCE -->
+        <div class="card" id="card-sce">
+            <button class="card-button" onclick="expandir('card-sce')">DETAILS</button>
+            <div class="card-title">SCE</div>
+            <div class="percentage" id="p-SCE">0%</div>
+            <div class="value-text">COMPLETED: <strong id="v-SCE">0 / 0</strong></div>
+            <div class="bar-container"><div id="b-SCE" class="bar-fill"></div></div>
+            <div class="card-extra"><div class="chart-container"><canvas id="chart-sce"></canvas></div></div>
+        </div>
+
+        <!-- CRIT #1 -->
+        <div class="card" id="card-crit1">
+            <button class="card-button" onclick="expandir('card-crit1')">DETAILS</button>
+            <div class="card-title">CRIT #1</div>
+            <div class="percentage" id="p-CRIT1">0%</div>
+            <div class="value-text">COMPLETED: <strong id="v-CRIT1">0 / 0</strong></div>
+            <div class="bar-container"><div id="b-CRIT1" class="bar-fill"></div></div>
+            <div class="card-extra"><div class="chart-container"><canvas id="chart-crit1"></canvas></div></div>
+        </div>
+    </div>
+
+    <!-- PAINEL DE UPDATE (PROTEGIDO POR SENHA) -->
+    <div id="update-panel" class="update-panel">
+      <h2 style="font-family:var(--font-bold); margin-bottom:10px;">UPDATE SYSTEM - EXCEL</h2>
+      <div class="controls">
+        <input type="file" id="file-input" accept=".xlsx,.xls,.csv" />
+        <button class="btn" onclick="apply()">Aplicar ao Dashboard</button>
+        <button class="btn" style="background:#ef4444; border-color:#ef4444;" onclick="resetAllData()">Resetar Tudo</button>
+      </div>
+      <div class="hint">Double check the values given from the spreadsheet. </div>
+    </div>
+</main>
+
+<!-- Botão admin para abrir painel (senha obrigatória) -->
+<div class="admin-trigger" onclick="checkPass()" title="Admin">🔒</div>
+
+<script>
+    // --- CONFIG FIREBASE ---
+    const firebaseConfig = {
+        apiKey: "AIzaSyDpowacZTDw8AiOQFK1SOY85x8LyNk1088",
+        authDomain: "rampdown-data.firebaseapp.com",
+        projectId: "rampdown-data",
+        databaseURL: "https://rampdown-data-default-rtdb.firebaseio.com",
+        storageBucket: "rampdown-data.firebasestorage.app",
+        messagingSenderId: "971612677227",
+        appId: "1:971612677227:web:74c155f0d5092b96913d2e"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    const kpis = ['OATS', 'SCE', 'CRIT1'];
+    const chartInstances = {};
+
+    // Helpers de UI
+    const toYMD = (d) => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const fmtLabel = (ts) => {
+        const d = new Date(ts);
+        const dd = String(d.getDate()).padStart(2,'0');
+        const mm = String(d.getMonth()+1).padStart(2,'0');
+        const yyyy = d.getFullYear();
+        const hh = String(d.getHours()).padStart(2,'0');
+        const mi = String(d.getMinutes()).padStart(2,'0');
+        return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
+    };
+
+    // --- GRÁFICOS (mantendo dataset numérico e tooltip resiliente) ---
+    function initChart(id, label, color) {
+        const ctx = document.getElementById(id).getContext('2d');
+        chartInstances[id] = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    { label, data: [], borderColor: color, borderWidth: 2, fill: false, tension: 0.45, pointRadius: 2 },
+                    { label: 'META 100%', data: [], borderColor: 'rgba(0,0,0,0.35)', borderWidth: 1.5, borderDash: [6, 4], pointRadius: 0 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: true,
+                        callbacks: {
+                            label: function(ctx) {
+                                // pct do ponto: quando dataset é numérico, ctx.parsed é o valor; quando é objeto, usa ctx.parsed.y
+                                const pct = typeof ctx.parsed === 'number' ? Number(ctx.parsed) : Number(ctx.parsed?.y ?? 0);
+
+                                // tenta ler cur/max se o ponto for objeto enriquecido (ctx.raw)
+                                const raw = ctx.raw;
+                                const hasRaw = raw && typeof raw === 'object';
+                                const cur = hasRaw ? Number(raw.cur ?? NaN) : NaN;
+                                const max = hasRaw ? Number(raw.max ?? NaN) : NaN;
+
+                                if (!isNaN(cur) && !isNaN(max) && max > 0) {
+                                    return `${cur} / ${max} (${pct}%)`;
+                                }
+                                // fallback: só pct
+                                return `(${pct}%)`;
+                            }
+                        }
+                    }
+                },
+                interaction: { mode:'nearest', intersect:true, axis:'x' },
+                scales: { x: { display: false }, y: { display: false, min: 0, max: 105 } }
+            }
+        });
+    }
+
+    // --- EXPANDIR ---
+    function expandir(id) {
+        const card = document.getElementById(id);
+        const btn = card.querySelector('.card-button');
+        card.classList.toggle('expanded');
+        btn.textContent = card.classList.contains('expanded') ? "CLOSE" : "DETAILS";
+    }
+
+    // --- STATUS ---
+    db.ref(".info/connected").on("value", (snap) => {
+        const statusDiv = document.getElementById('sync-status');
+        const statusText = document.getElementById('status-text');
+        if (snap.val() === true) {
+            statusDiv.className = 'online'; statusText.textContent = 'STATUS: ONLINE';
+        } else {
+            statusDiv.className = 'offline'; statusText.textContent = 'STATUS: CONNECTING';
+        }
+    });
+
+    // --- EVENTOS intradiários ---
+    async function writeEventIfChanged(id, cur, max, pct) {
+        const dayKey = toYMD(new Date());
+        const lastSnap = await db.ref(`dashboard_events/${id}/${dayKey}`).limitToLast(1).once('value');
+        let equal = false;
+        if (lastSnap.exists()) {
+            const last = Object.values(lastSnap.val())[0] || {};
+            if (Number(last.cur) === cur && Number(last.max) === max && Number(last.pct) === pct) equal = true;
+        }
+        if (!equal) {
+            const ts = Date.now();
+            await db.ref(`dashboard_events/${id}/${dayKey}`).push({ cur, max, pct, ts });
+        }
+    }
+
+    // --- LIVE KPIs (somente leitura para cards) ---
+    db.ref('dashboard_live').on('value', async (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
+        for (const id of kpis) {
+            const cur = Number(data[id]?.cur || 0);
+            const max = Number(data[id]?.max || 1);
+            const pct = Math.floor((cur / max) * 100);
+
+            const color = pct < 50 ? 'var(--danger)' : pct < 85 ? 'var(--warning)' : 'var(--success)';
+            document.getElementById(`v-${id}`).textContent = `${cur} / ${max}`;
+            document.getElementById(`p-${id}`).textContent = `${pct}%`;
+            document.getElementById(`p-${id}`).style.color = color;
+            const bar = document.getElementById(`b-${id}`);
+            if (bar) {
+                bar.style.width = Math.min(pct, 100) + "%";
+                bar.style.backgroundColor = color;
+            }
+
+            await writeEventIfChanged(id, cur, max, pct);
+        }
+    });
+
+    // --- GRÁFICOS: últimos 7 dias (mantendo série numérica; tooltip usa raw se existir) ---
+    const DAYS_BACK = 7;
+    function getLastDaysKeys(n) {
+        const out = [];
+        const now = new Date();
+        for (let i = n - 1; i >= 0; i--) {
+            const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - i);
+            out.push(toYMD(d));
+        }
+        return out;
+    }
+    kpis.forEach(id => {
+        const cId = `chart-${id.toLowerCase()}`;
+        db.ref(`dashboard_events/${id}`).on('value', snap => {
+            const allDays = snap.val() || {};
+            if (!chartInstances[cId]) return;
+            const wanted = new Set(getLastDaysKeys(DAYS_BACK));
+            const merged = [];
+            Object.entries(allDays).forEach(([day, events]) => {
+                if (!wanted.has(day)) return;
+                merged.push(...Object.values(events || {}));
+            });
+            merged.sort((a, b) => Number(a.ts || 0) - Number(b.ts || 0));
+
+            const labels = merged.map(e => fmtLabel(e.ts || Date.now()));
+            // Mantém a série numérica para não quebrar render
+            const data = merged.map(e => Number(e.pct || 0));
+            const chart = chartInstances[cId];
+            chart.data.labels = labels;
+            chart.data.datasets[0].data = data;
+            chart.data.datasets[1].data = Array(labels.length).fill(100);
+            chart.update();
+        });
+    });
+
+    // ================== EXTRATOR INFALÍVEL (mês atual; inclui 01 em qualquer forma) ==================
+    let workbook = null;
+    let computed = { OATS:{done:0,total:0}, SCE:{done:0,total:0}, CRIT1:{done:0,total:0} };
+
+    // Índices das colunas na IW39 (ajuste se necessário)
+    const IDX_A=0, IDX_D=8, IDX_J=14, IDX_L=15;
+
+    document.getElementById('file-input').addEventListener('change', async (ev)=>{
+      const file=ev.target.files?.[0]; if(!file) return;
+      const buf=await file.arrayBuffer();
+      workbook = XLSX.read(buf,{type:'array'});
+      alert('IW39 carregada. Clique em Aplicar ao Dashboard.');
+    });
+
+    // Utils de data robustos
+    function normWS(s){ return (s==null?'':String(s)).replace(/\u00A0/g,' ').trim(); }
+    function zeroLocal(d){ return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0,0,0,0); }
+    function monthRangeCurrent(){
+      const now=new Date();
+      const start=new Date(now.getFullYear(), now.getMonth(), 1, 0,0,0,0);
+      const end=new Date(now.getFullYear(), now.getMonth()+1, 0, 23,59,59,999);
+      return { start, end, month:now.getMonth(), year:now.getFullYear() };
+    }
+    function sameMonthYear(d, m, y){ return d && d.getMonth()===m && d.getFullYear()===y; }
+
+    function looksUSmdy(s){
+      const m = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/.exec(s);
+      if (!m) return false;
+      const a=+m[1], b=+m[2];
+      if (a<=12 && b>12) return true;
+      return false;
+    }
+
+    const EXCEL_1904_SYSTEM = false;
+    function fromExcelSerial(n){
+      const base = EXCEL_1904_SYSTEM ? new Date(Date.UTC(1904,0,1)) : new Date(Date.UTC(1899,11,30));
+      const ms = Math.round(n*86400000);
+      return new Date(base.getTime()+ms);
+    }
+
+    function parseDateAny(v){
+      if (v instanceof Date && !isNaN(v.getTime())) return v;
+      if (typeof v==='number' && isFinite(v)){
+        const dt = fromExcelSerial(v);
+        if (!isNaN(dt.getTime())) return new Date(dt.getFullYear(), dt.getMonth(), dt.getDate());
+      }
+      const s = normWS(v);
+      if (!s) return null;
+
+      let m = /^(\d{4})-(\d{1,2})-(\d{1,2})(?:[ T].*)?$/.exec(s);
+      if (m){
+        const y=+m[1], mo=+m[2], d=+m[3];
+        const dt = new Date(y, mo-1, d, 0,0,0,0);
+        if (!isNaN(dt.getTime())) return dt;
+      }
+      m = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:[ T].*)?$/.exec(s);
+      if (m && !looksUSmdy(s)){
+        const d=+m[1], mo=+m[2], y = +m[3] < 100 ? (2000 + (+m[3])) : +m[3];
+        const dt = new Date(y, mo-1, d, 0,0,0,0);
+        if (!isNaN(dt.getTime())) return dt;
+      }
+      if (looksUSmdy(s)){
+        const m2=/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})(?:[ T].*)?$/.exec(s);
+        if (m2){
+          const mo=+m2[1], d=+m2[2], y= +m2[3] < 100 ? (2000 + (+m2[3])) : +m2[3];
+          const dt=new Date(y, mo-1, d, 0,0,0,0);
+          if (!isNaN(dt.getTime())) return dt;
+        }
+      }
+      const nat = new Date(s);
+      if (!isNaN(nat.getTime())){
+        const y=nat.getFullYear(), mo=nat.getMonth(), d=nat.getDate();
+        return new Date(y, mo, d, 0,0,0,0);
+      }
+      return null;
+    }
+
+    // Matchers de KPI e status
+    const norm=(s)=>(s==null?'':String(s)).toUpperCase().replace(/\u00A0/g,' ').replace(/[–—−]/g,'-').replace(/\s+/g,' ').trim();
+    function isTECO(v){ return /\bTECO\b/.test(norm(v)); }
+    function matchOATS(v){ const f=norm(v); const d='[\\s,;:\\/|()\\[\\]{}<>=\\"\\\'.-]'; return new RegExp(`(^|${d})OATS(${d}|$)`).test(f); }
+    function matchGENR0(v){ const f=norm(v); const d='[\\s,;:\\/|()\\[\\]{}<>=\\"\\\'.-]'; return new RegExp(`(^|${d})GENR-0(${d}|$)`).test(f); }
+    function matchGENR1(v){ const f=norm(v); const d='[\\s,;:\\/|()\\[\\]{}<>=\\"\\\'.-]'; return new RegExp(`(^|${d})GENR-1(${d}|$)`).test(f); }
+
+    // Processar arquivo e retornar contagem
+    function computeFromWorkbook(wb){
+      const { month, year } = monthRangeCurrent();
+      const sheet=wb.SheetNames[0];
+      const ws=wb.Sheets[sheet];
+      const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
+      if (!rows.length) throw new Error('Aba vazia/incorreta');
+
+      const first = parseDateAny(rows[0]?.[IDX_L]);
+      const begin = (first && !isNaN(first)) ? 0 : 1;
+
+      const counters = { OATS:{done:0,total:0}, SCE:{done:0,total:0}, CRIT1:{done:0,total:0} };
+
+      for (let i=begin;i<rows.length;i++){
+        const r=rows[i];
+        if (!r || r.length<=Math.max(IDX_A,IDX_D,IDX_J,IDX_L)) continue;
+        const rawL = r[IDX_L];
+        const dt = parseDateAny(rawL);
+        if (!dt) continue;
+        const d0 = zeroLocal(dt);
+        if (!sameMonthYear(d0, month, year)) continue;
+
+        if (matchOATS(r[IDX_D])){ counters.OATS.total++; if (isTECO(r[IDX_J])) counters.OATS.done++; }
+        else if (matchGENR0(r[IDX_D])){ counters.SCE.total++; if (isTECO(r[IDX_J])) counters.SCE.done++; }
+        else if (matchGENR1(r[IDX_D])){ counters.CRIT1.total++; if (isTECO(r[IDX_J])) counters.CRIT1.done++; }
+      }
+      return counters;
+    }
+
+    async function apply(){
+      if (!workbook){ alert('Carregue a IW39 no painel de atualização.'); return; }
+      try{
+        const counters = computeFromWorkbook(workbook);
+        const payload = {
+          OATS: { cur: counters.OATS.done,  max: counters.OATS.total },
+          SCE:  { cur: counters.SCE.done,   max: counters.SCE.total },
+          CRIT1:{ cur: counters.CRIT1.done, max: counters.CRIT1.total }
+        };
+        await db.ref('dashboard_live').set(payload);
+        alert('KPIs aplicados ao dashboard.');
+      }catch(e){
+        console.error(e); alert('Falha ao aplicar: ' + (e && e.message ? e.message : e));
+      }
+    }
+
+    async function resetAllData() {
+      const confirmText = "Tem certeza que deseja APAGAR TODOS os dados?\n- dashboard_live (cur=0, max mantido)\n- dashboard_history\n- dashboard_daily\n- dashboard_events";
+      if (!confirm(confirmText)) return;
+      try{
+        const liveSnap = await db.ref('dashboard_live').once('value');
+        const liveVal = liveSnap.val() || {};
+        const newLive = {};
+        ['OATS','SCE','CRIT1'].forEach(k=>{ newLive[k]={cur:0, max:Number(liveVal[k]?.max||0)}; });
+        await db.ref().update({
+          '/dashboard_live': newLive,
+          '/dashboard_history': null,
+          '/dashboard_daily': null,
+          '/dashboard_events': null
+        });
+        alert('Reset concluído.');
+      }catch(e){ console.error(e); alert('Erro ao resetar.'); }
+    }
+
+    function checkPass(){
+      if (prompt('Senha:') === '222324'){
+        const panel = document.getElementById('update-panel');
+        panel.style.display = 'block';
+        window.scrollTo({ top: panel.offsetTop - 20, behavior: 'smooth' });
+      }
+    }
+
+    // HEADER WAVES
+    const canvas = document.getElementById('bg-canvas');
+    const ctx = canvas.getContext('2d');
+    let count = 0;
+    function init() { canvas.width = window.innerWidth; canvas.height = 100; }
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const centerY = canvas.height / 2;
+        const color = "rgba(36, 80, 255, 1)";
+        const waves = [
+            { amplitude: Math.max(34, canvas.height * 0.09), frequency: 0.0046, phase: 0,                 lineWidth: 2.8 },
+            { amplitude: Math.max(28, canvas.height * 0.08), frequency: 0.0062, phase: Math.PI / 2.6,     lineWidth: 2.6 },
+            { amplitude: Math.max(22, canvas.height * 0.07), frequency: 0.0042, phase: Math.PI / 1.6,     lineWidth: 2.4 }
+        ];
+        for (const w of waves) {
+            ctx.beginPath();
+            ctx.lineWidth = w.lineWidth;
+            ctx.strokeStyle = color;
+            for (let x = 0; x < canvas.width; x += 1) {
+                const y = centerY + Math.sin(x * w.frequency + count + w.phase) * w.amplitude;
+                if (x === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+        const fadePad = 480;
+        const fadeWidth = Math.min(80, canvas.width * 0.10);
+        ctx.save();
+        ctx.globalCompositeOperation = 'destination-in';
+        const fade = ctx.createLinearGradient(fadePad, 0, fadePad + fadeWidth, 0);
+        fade.addColorStop(0.00, 'rgba(0,0,0,0)');
+        fade.addColorStop(0.50, 'rgba(0,0,0,0.35)');
+        fade.addColorStop(0.85, 'rgba(0,0,0,0.85)');
+        fade.addColorStop(1.00, 'rgba(0,0,0,1)');
+        ctx.fillStyle = fade;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.restore();
+
+        count += 0.01;
+        requestAnimationFrame(draw);
+    }
+    window.addEventListener('resize', init);
+    window.onload = () => {
+        init(); draw();
+        const meses = ["JANUARY", "FEBRUARY", "MARCH", "APRIL", "MAY", "JUNE", "JULY", "AUGUST", "SEPTEMBER", "OCTOBER", "NOVEMBER", "DECEMBER"];
+        document.getElementById('main-results-title').textContent = `${meses[new Date().getMonth()]} RESULTS`;
+        initChart('chart-oats', 'OATS', '#2563eb');
+        initChart('chart-sce', 'SCE', '#10b981');
+        initChart('chart-crit1', 'CRIT', '#f59e0b');
+    };
+</script>
+</body>
+</html>
