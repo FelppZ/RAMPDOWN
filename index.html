@@ -205,7 +205,7 @@
         return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
     };
 
-    // --- GRÁFICOS ---
+    // --- GRÁFICOS (mantendo dataset numérico e tooltip resiliente) ---
     function initChart(id, label, color) {
         const ctx = document.getElementById(id).getContext('2d');
         chartInstances[id] = new Chart(ctx, {
@@ -220,7 +220,30 @@
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
+                plugins: { 
+                    legend: { display: false },
+                    tooltip: {
+                        enabled: true,
+                        callbacks: {
+                            label: function(ctx) {
+                                // pct do ponto: quando dataset é numérico, ctx.parsed é o valor; quando é objeto, usa ctx.parsed.y
+                                const pct = typeof ctx.parsed === 'number' ? Number(ctx.parsed) : Number(ctx.parsed?.y ?? 0);
+
+                                // tenta ler cur/max se o ponto for objeto enriquecido (ctx.raw)
+                                const raw = ctx.raw;
+                                const hasRaw = raw && typeof raw === 'object';
+                                const cur = hasRaw ? Number(raw.cur ?? NaN) : NaN;
+                                const max = hasRaw ? Number(raw.max ?? NaN) : NaN;
+
+                                if (!isNaN(cur) && !isNaN(max) && max > 0) {
+                                    return `${cur} / ${max} (${pct}%)`;
+                                }
+                                // fallback: só pct
+                                return `(${pct}%)`;
+                            }
+                        }
+                    }
+                },
                 interaction: { mode:'nearest', intersect:true, axis:'x' },
                 scales: { x: { display: false }, y: { display: false, min: 0, max: 105 } }
             }
@@ -275,14 +298,16 @@
             document.getElementById(`p-${id}`).textContent = `${pct}%`;
             document.getElementById(`p-${id}`).style.color = color;
             const bar = document.getElementById(`b-${id}`);
-            bar.style.width = Math.min(pct, 100) + "%";
-            bar.style.backgroundColor = color;
+            if (bar) {
+                bar.style.width = Math.min(pct, 100) + "%";
+                bar.style.backgroundColor = color;
+            }
 
             await writeEventIfChanged(id, cur, max, pct);
         }
     });
 
-    // --- GRÁFICOS: últimos 7 dias ---
+    // --- GRÁFICOS: últimos 7 dias (mantendo série numérica; tooltip usa raw se existir) ---
     const DAYS_BACK = 7;
     function getLastDaysKeys(n) {
         const out = [];
@@ -305,7 +330,9 @@
                 merged.push(...Object.values(events || {}));
             });
             merged.sort((a, b) => Number(a.ts || 0) - Number(b.ts || 0));
+
             const labels = merged.map(e => fmtLabel(e.ts || Date.now()));
+            // Mantém a série numérica para não quebrar render
             const data = merged.map(e => Number(e.pct || 0));
             const chart = chartInstances[cId];
             chart.data.labels = labels;
@@ -320,12 +347,11 @@
     let computed = { OATS:{done:0,total:0}, SCE:{done:0,total:0}, CRIT1:{done:0,total:0} };
 
     // Índices das colunas na IW39 (ajuste se necessário)
-    const IDX_A=0, IDX_D=3, IDX_J=9, IDX_L=11;
+    const IDX_A=0, IDX_D=8, IDX_J=14, IDX_L=15;
 
     document.getElementById('file-input').addEventListener('change', async (ev)=>{
       const file=ev.target.files?.[0]; if(!file) return;
       const buf=await file.arrayBuffer();
-      // Usamos raw:true e sem cellDates para obter strings/seriais exatamente como estão
       workbook = XLSX.read(buf,{type:'array'});
       alert('IW39 carregada. Clique em Aplicar ao Dashboard.');
     });
@@ -341,7 +367,6 @@
     }
     function sameMonthYear(d, m, y){ return d && d.getMonth()===m && d.getFullYear()===y; }
 
-    // Heurística para mm/dd/yyyy
     function looksUSmdy(s){
       const m = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/.exec(s);
       if (!m) return false;
@@ -350,7 +375,6 @@
       return false;
     }
 
-    // Serial Excel
     const EXCEL_1904_SYSTEM = false;
     function fromExcelSerial(n){
       const base = EXCEL_1904_SYSTEM ? new Date(Date.UTC(1904,0,1)) : new Date(Date.UTC(1899,11,30));
@@ -358,7 +382,6 @@
       return new Date(base.getTime()+ms);
     }
 
-    // Parser de data infalível
     function parseDateAny(v){
       if (v instanceof Date && !isNaN(v.getTime())) return v;
       if (typeof v==='number' && isFinite(v)){
@@ -425,7 +448,6 @@
         const d0 = zeroLocal(dt);
         if (!sameMonthYear(d0, month, year)) continue;
 
-        // Contagem por linha
         if (matchOATS(r[IDX_D])){ counters.OATS.total++; if (isTECO(r[IDX_J])) counters.OATS.done++; }
         else if (matchGENR0(r[IDX_D])){ counters.SCE.total++; if (isTECO(r[IDX_J])) counters.SCE.done++; }
         else if (matchGENR1(r[IDX_D])){ counters.CRIT1.total++; if (isTECO(r[IDX_J])) counters.CRIT1.done++; }
@@ -436,11 +458,11 @@
     async function apply(){
       if (!workbook){ alert('Carregue a IW39 no painel de atualização.'); return; }
       try{
-        computed = computeFromWorkbook(workbook);
+        const counters = computeFromWorkbook(workbook);
         const payload = {
-          OATS: { cur: computed.OATS.done,  max: computed.OATS.total },
-          SCE:  { cur: computed.SCE.done,   max: computed.SCE.total },
-          CRIT1:{ cur: computed.CRIT1.done, max: computed.CRIT1.total }
+          OATS: { cur: counters.OATS.done,  max: counters.OATS.total },
+          SCE:  { cur: counters.SCE.done,   max: counters.SCE.total },
+          CRIT1:{ cur: counters.CRIT1.done, max: counters.CRIT1.total }
         };
         await db.ref('dashboard_live').set(payload);
         alert('KPIs aplicados ao dashboard.');
@@ -449,7 +471,6 @@
       }
     }
 
-    // --- RESET ALL (via Admin) ---
     async function resetAllData() {
       const confirmText = "Tem certeza que deseja APAGAR TODOS os dados?\n- dashboard_live (cur=0, max mantido)\n- dashboard_history\n- dashboard_daily\n- dashboard_events";
       if (!confirm(confirmText)) return;
@@ -468,7 +489,6 @@
       }catch(e){ console.error(e); alert('Erro ao resetar.'); }
     }
 
-    // --- PROTEÇÃO POR SENHA PARA MOSTRAR O PAINEL DE UPDATE ---
     function checkPass(){
       if (prompt('Senha:') === '222324'){
         const panel = document.getElementById('update-panel');
@@ -477,7 +497,7 @@
       }
     }
 
-    // --- HEADER WAVES ---
+    // HEADER WAVES
     const canvas = document.getElementById('bg-canvas');
     const ctx = canvas.getContext('2d');
     let count = 0;
@@ -501,7 +521,6 @@
             }
             ctx.stroke();
         }
-        // Fade lateral via máscara
         const fadePad = 480;
         const fadeWidth = Math.min(80, canvas.width * 0.10);
         ctx.save();
