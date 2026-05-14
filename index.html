@@ -51,7 +51,9 @@
     .nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:#cbd5e1;cursor:pointer}
     .nav-item:hover{background:var(--sidebar-hover);color:#fff}
     .nav-item.active{background:var(--sidebar-active);color:#fff}
-    .nav-item .emoji{width:22px;text-align:center}
+    .nav-item .icon{width:22px;display:inline-flex;align-items:center;justify-content:center}
+    .nav-item .icon svg{width:18px;height:18px;opacity:.9;color:#cbd5e1}
+    .nav-item.active .icon svg{opacity:1;color:#ffffff}
     .nav-item .label{font-size:14px}
     .nav-item.active .label{font-family:var(--font-bold)}
     .sidebar .toggle-arrow{
@@ -136,10 +138,49 @@
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
   <nav>
-    <div class="nav-item active" data-page="page-kpis"><span class="emoji">🌐</span><span class="label">KPIs</span></div>
-    <div class="nav-item" data-page="page-reports"><span class="emoji">🌐</span><span class="label">Reports</span></div>
-    <div class="nav-item" data-page="page-planner"><span class="emoji">🌐</span><span class="label">Planner</span></div>
-    <div class="nav-item" data-page="page-admin"><span class="emoji">🌐</span><span class="label">Admin</span></div>
+    <!-- KPIs -->
+    <div class="nav-item active" data-page="page-kpis">
+      <span class="icon" aria-hidden="true">
+        <!-- Material Symbols: show_chart -->
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 3h2v14h14v2H3V3zm16 4-4.5 6.01-3.5-4.51L7 12.99V15l3.5-4.5 3.5 4.5L21 7v-2l-2 2z"/>
+        </svg>
+      </span>
+      <span class="label">KPIs</span>
+    </div>
+
+    <!-- Reports -->
+    <div class="nav-item" data-page="page-reports">
+      <span class="icon" aria-hidden="true">
+        <!-- Material Symbols: insert_chart -->
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 3H5c-1.1 0-2 .9-2 2v14h2V5h14V3zm-3 6h-2v8h2V9zm-4 4H10v4h2v-4zM7 13H5v6h2v-6z"/>
+        </svg>
+      </span>
+      <span class="label">Reports</span>
+    </div>
+
+    <!-- Planner -->
+    <div class="nav-item" data-page="page-planner">
+      <span class="icon" aria-hidden="true">
+        <!-- Material Symbols: event -->
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M17 12h-5v5h5v-5zM7 2v2H5c-1.1 0-2 .9-2 2v13c0 1.1.9 2 2 2h14c1.11 0 2-.9 2-2V6c0-1.1-.89-2-2-2h-2V2h-2v2H9V2H7zm12 17H5V9h14v10z"/>
+        </svg>
+      </span>
+      <span class="label">Planner</span>
+    </div>
+
+    <!-- Admin -->
+    <div class="nav-item" data-page="page-admin">
+      <span class="icon" aria-hidden="true">
+        <!-- Material Symbols: settings -->
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1a7.03 7.03 0 0 0-1.69-.98l-.38-2.65A.5.5 0 0 0 13 2h-4c-.24 0-.44.17-.49.41l-.38 2.65c-.6.23-1.16.53-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46c-.12.22-.07.49.12.64l2.11 1.65c-.05.32-.08.65-.08.98s.03.66.08.98L1.48 14.6a.5.5 0 0 0-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.53.45 1.09.82 1.69 1.05l.38 2.65c.05.24.25.41.49.41h4c.24 0 .44-.17.49-.41l.38-2.65c.6-.23 1.16-.6 1.69-1.05l2.49 1c.22.08.49 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.62zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/>
+        </svg>
+      </span>
+      <span class="label">Admin</span>
+    </div>
   </nav>
   <div class="toggle-arrow" id="toggleSidebar" title="Ocultar/mostrar menu">↔</div>
 </aside>
