@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login - RAMPDOWN</title>
+  <link rel="icon" type="image/png" href="https://logosandtypes.com/wp-content/uploads/2025/05/MODEC-scaled.png">
+  <style>
+    :root{
+      --tech-black:#0b0f19;
+      --accent:#2563eb;
+      --font-bold:'Bahnschrift SemiBold','Segoe UI',sans-serif;
+      --font-light:'Bahnschrift Light','Segoe UI',sans-serif;
+    }
+    body, html {
+      height: 100%;
+      margin: 0;
+      font-family: var(--font-light);
+      background: #fcfcfc;
+    }
+    .login-container {
+      display: flex;
+      height: 100vh;
+      min-height: 100vh;
+    }
+    .login-left {
+      flex: 1;
+      background: var(--tech-black);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 40px;
+      align-items: flex-start;
+      position: relative;
+      overflow: hidden;
+    }
+    .login-logo {
+      height: 80px;
+      margin-bottom: 18px;
+      margin-left: 10px;
+    }
+    .login-title {
+      font-family: var(--font-bold);
+      font-size: 2rem;
+      letter-spacing: 2px;
+      margin-bottom: 10px;
+      margin-left: 10px;
+    }
+    .login-subtitle {
+      font-size: 1rem;
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 35px;
+      letter-spacing: 1px;
+      margin-left: 10px;
+    }
+    .login-right {
+      flex: 1;
+      background: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px;
+    }
+    .login-form {
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      padding: 40px 32px;
+      min-width: 320px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      border: 1px solid #e5e7eb;
+    }
+    .login-form label {
+      font-family: var(--font-bold);
+      font-size: 1rem;
+      color: #0b0f19;
+      margin-bottom: 8px;
+    }
+    .login-form input[type="password"] {
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      font-size: 1rem;
+      margin-bottom: 18px;
+      background: #f8fafc;
+      color: #0b0f19;
+    }
+    .login-form button {
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      background: var(--tech-black);
+      color: #fff;
+      font-family: var(--font-bold);
+      font-size: 1.1rem;
+      cursor: pointer;
+      transition: background .2s;
+      margin-bottom: 10px;
+    }
+    .login-form button:hover {
+      background: #111627;
+    }
+    .login-form .error {
+      color: #ef4444;
+      font-size: .95rem;
+      margin-bottom: 10px;
+      min-height: 18px;
+    }
+    /* Ondas */
+    #waves-canvas {
+      position: absolute;
+      left: 0;
+      bottom: 0;
+      width: 100%;
+      height: 100px;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.35;
+    }
+    .login-content {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+    }
+    @media (max-width: 900px) {
+      .login-container { flex-direction: column; }
+      .login-left, .login-right { flex: unset; height: 50vh; }
+      .login-form { min-width: 0; width: 100%; }
+      #waves-canvas { height: 60px; }
+    }
+  </style>
+</head>
+<body>
+<div class="login-container">
+  <div class="login-left">
+    <div class="login-content">
+      <img class="login-logo" src="https://i0.wp.com/gcci.gy/wp-content/uploads/2025/01/logo-MODEC-1-Faneeza-Karim.png?ssl=1" alt="Logo MODEC">
+      <div class="login-title">RAMPDOWN DASHBOARD</div>
+      <div class="login-subtitle">Live KPI Monitoring System</div>
+    </div>
+    <canvas id="waves-canvas"></canvas>
+  </div>
+  <div class="login-right">
+    <form class="login-form" id="loginForm" autocomplete="off" onsubmit="return false;">
+      <label for="adminPass">Insert Password</label>
+      <input type="password" id="adminPass" placeholder="Password" required />
+      <div class="error" id="loginError"></div>
+      <button type="submit" onclick="checkLogin()">Login</button>
+    </form>
+  </div>
+</div>
+<script>
+  // Ondas animadas igual ao header
+  const canvas = document.getElementById('waves-canvas');
+  const ctx = canvas.getContext('2d');
+  function resizeWaves() {
+    canvas.width = canvas.offsetWidth;
+    canvas.height = canvas.offsetHeight;
+  }
+  window.addEventListener('resize', resizeWaves);
+  resizeWaves();
+  let count = 0;
+  function drawWaves() {
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    const centerY = canvas.height/2;
+    const color = 'rgba(36,80,255,1)';
+    const waves = [
+      { amplitude:Math.max(34,canvas.height*.09), frequency:.0046, phase:0, lineWidth:2.8 },
+      { amplitude:Math.max(28,canvas.height*.08), frequency:.0062, phase:Math.PI/2.6, lineWidth:2.6 },
+      { amplitude:Math.max(22,canvas.height*.07), frequency:.0042, phase:Math.PI/1.6, lineWidth:2.4 }
+    ];
+    for(const w of waves){
+      ctx.beginPath(); ctx.lineWidth=w.lineWidth; ctx.strokeStyle=color;
+      for(let x=0;x<canvas.width;x+=1){
+        const y=centerY+Math.sin(x*w.frequency+count+w.phase)*w.amplitude;
+        if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+      }
+      ctx.stroke();
+    }
+    count+=.01; requestAnimationFrame(drawWaves);
+  }
+  drawWaves();
+
+  function checkLogin() {
+    const pass = document.getElementById('adminPass').value;
+    const error = document.getElementById('loginError');
+    // Troque a senha abaixo para a senha real do admin
+    if(pass === '222324') {
+      error.textContent = '';
+      // Redirecione para o dashboard
+      window.location.href = 'index.html'; // Troque para o caminho real do seu dashboard
+    } else {
+      error.textContent = 'Wrong password';
+    }
+  }
+</script>
+</body>
+</html>
