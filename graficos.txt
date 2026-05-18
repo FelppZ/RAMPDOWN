@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>RAMPDOWN DASHBOARD</title>
+  <link rel="icon" type="image/png" href="https://logosandtypes.com/wp-content/uploads/2025/05/MODEC-scaled.png">
+  <!-- Firebase e Chart.js -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- SheetJS -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root{
+      --tech-black:#0b0f19; --pure-white:#ffffff; --accent:#2563eb;
+      --text-dark:#0b0f19; --text-gray:#64748b; --success:#10b981;
+      --danger:#ef4444; --warning:#f59e0b; --border:#e5e7eb;
+      --font-bold:'Bahnschrift SemiBold','Segoe UI',sans-serif;
+      --font-light:'Bahnschrift Light','Segoe UI',sans-serif;
+      --sidebar-bg:#0b0f19; --sidebar-hover:#111627; --sidebar-active:#1f2937;
+      --bar:#2563eb;
+      --bar-dim:rgba(37,99,235,.35);
+      --bar-full:rgba(37,99,235,1);
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{background:#fcfcfc;color:var(--text-dark);min-height:100vh;font-family:var(--font-light)}
+
+    /* HEADER */
+    header{position:sticky;top:0;background:var(--tech-black);height:100px;display:flex;align-items:center;padding:0 50px;overflow:hidden;z-index:1000}
+    #bg-canvas{position:absolute;top:0;left:0;width:100%;height:100px;opacity:.3;z-index:1}
+    header::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;background:linear-gradient(90deg,rgba(0,0,0,1) 0%,rgba(0,0,0,.85) 6%,rgba(0,0,0,.35) 14%,rgba(0,0,0,0) 22%,rgba(0,0,0,0) 78%,rgba(0,0,0,.35) 86%,rgba(0,0,0,.85) 94%,rgba(0,0,0,1) 100%)}
+    .header-content{position:relative;z-index:3;display:flex;justify-content:space-between;width:100%;align-items:center}
+    .left-group{display:flex;align-items:center;gap:16px}
+    .left-group img{height:42px;object-fit:contain}
+    .v-line{width:2px;height:36px;background:#fff;opacity:.5}
+    .title-group{display:flex;flex-direction:column;gap:4px}
+    .program-title{font-family:var(--font-bold);font-size:1.4rem;color:#fff;line-height:1}
+    .subtitle{font-size:.75rem;color:rgba(255,255,255,.7);letter-spacing:.5px}
+    #sync-status{font-family:var(--font-bold);font-size:.7rem;display:flex;align-items:center;gap:8px;color:#fff}
+    .dot{width:8px;height:8px;border-radius:50%;background:#444}
+    .online{color:var(--success)}.online .dot{background:var(--success);box-shadow:0 0 10px var(--success)}
+    .offline{color:var(--danger)}.offline .dot{background:var(--danger);box-shadow:0 0 10px var(--danger)}
+
+    /* SIDEBAR */
+    .sidebar{position:fixed;top:100px;left:0;bottom:0;width:220px;background:var(--sidebar-bg);color:#fff;display:flex;flex-direction:column;padding:16px 10px;z-index:900;border-right:1px solid rgba(255,255,255,.06);transition:transform .25s ease}
+    .sidebar.hidden{transform:translateX(-230px)}
+    .sidebar nav{display:flex;flex-direction:column;gap:6px;height:100%}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:#cbd5e1;cursor:pointer}
+    .nav-item:hover{background:var(--sidebar-hover);color:#fff}
+    .nav-item.active{background:var(--sidebar-active);color:#fff}
+    .nav-item .icon{width:22px;display:inline-flex;align-items:center;justify-content:center}
+    .nav-item .icon svg{width:18px;height:18px;opacity:.9;color:#cbd5e1}
+    .nav-item.active .icon svg{opacity:1;color:#ffffff}
+    .nav-item .label{font-size:14px}
+    .nav-item.active .label{font-family:var(--font-bold)}
+    .sidebar .toggle-arrow{
+      position:absolute;right:10px;bottom:10px;width:36px;height:36px;border-radius:50%;
+      display:flex;align-items:center;justify-content:center;background:#111;color:#fff;
+      cursor:pointer;border:1px solid #000;opacity:.90;transition:.2s; font-size:18px; line-height:1;
+    }
+    .sidebar .toggle-arrow:hover{opacity:1;background:#000}
+
+    /* MAIN */
+    .container{max-width:1300px;margin:40px auto;padding:0 40px;margin-left:220px;transition:margin-left .25s ease}
+    .presentation-mode .container{margin-left:0}
+
+    .page{display:none}
+    .page.active{display:block}
+    .section-results-title{font-family:var(--font-bold);font-size:1.6rem;color:#1a1a1a;text-transform:uppercase;letter-spacing:4px;margin-bottom:30px;border-bottom:2px solid #f0f0f0;padding-bottom:10px}
+
+    /* KPIs */
+    .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:30px;align-items:start}
+    .card{position:relative;background:#fff;padding:35px;border-radius:20px;border:1px solid #f0f0f0;box-shadow:0 4px 15px rgba(0,0,0,.03);transition:.3s}
+    .card:hover{transform:translateY(-5px);box-shadow:0 12px 30px rgba(0,0,0,.08)}
+    .card-button{position:absolute;top:25px;right:20px;z-index:10;padding:6px 12px;background:#fff;border:1.5px solid #000;border-radius:6px;font-family:var(--font-bold);font-size:.65rem;cursor:pointer}
+    .card-button:hover{background:#000;color:#fff}
+    .percentage{font-family:var(--font-bold);font-size:4.5rem;line-height:1;margin-bottom:10px}
+    .value-text{color:#64748b;margin-bottom:20px;font-size:.95rem}
+    .bar-container{background:#f8fafc;height:8px;border-radius:4px;overflow:hidden}
+    .bar-fill{height:100%;width:0%;transition:width 1.2s,background-color .4s}
+    .card-extra{max-height:0;opacity:0;overflow:hidden;transition:max-height .6s cubic-bezier(0,1,0,1),opacity .3s}
+    .card.expanded .card-extra{max-height:300px;opacity:1;margin-top:20px;padding-top:20px;border-top:2px #eee}
+    .chart-container{height:130px;width:100%}
+    .card-title{font-family:var(--font-bold);font-size:1.6rem;letter-spacing:1px;color:var(--text-dark);text-transform:uppercase;margin-bottom:25px}
+
+    /* REPORTS */
+    .report-controls{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+    .report-controls .btn{padding:8px 12px;border:1px solid #111;border-radius:6px;background:#fff;color:#111;cursor:pointer;transition:.2s}
+    .report-controls .btn:hover{background:#111;color:#fff}
+    .report-controls .btn.active{background:#111;color:#fff}
+    .time-filter{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+    .time-filter label{font-size:12px;color:#334155}
+    .time-filter select{padding:8px;border:1px solid #111;border-radius:6px;background:#fff;color:#111;cursor:pointer}
+    .reports-chart-wrap{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px}
+    .reports-chart{height:300px}
+
+    /* Disciplinas */
+    .discipline-wrap{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin-top:16px}
+    .discipline-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+    .discipline-title{font-family:var(--font-bold);font-size:1.05rem}
+    .discipline-table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;border:1px solid var(--border);border-radius:10px;overflow:hidden}
+    .discipline-table thead th{background:#f8fafc;color:#0b0f19;font-family:var(--font-bold);font-size:.92rem;padding:10px 12px;border-bottom:1px solid var(--border);text-align:left}
+    .discipline-table tbody td{font-size:.9rem;padding:10px 12px;border-bottom:1px solid #eef2f7}
+    .discipline-table tbody tr:nth-child(odd){background:#fcfdff}
+    .discipline-table tbody tr:hover{background:#f3f6fb}
+    .discipline-table th:first-child,.discipline-table td:first-child{width:45%}
+    .discipline-table th:nth-child(2),.discipline-table td:nth-child(2){width:18%;text-align:right}
+    .discipline-table th:nth-child(3),.discipline-table td:nth-child(3){width:18%;text-align:right}
+    .discipline-table th:nth-child(4),.discipline-table td:nth-child(4){width:19%;text-align:right}
+
+    /* ADMIN */
+    .admin-trigger{position:fixed;bottom:30px;right:30px;background:#000;color:#fff;width:45px;height:45px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.4;z-index:1100}
+    .admin-trigger:hover{opacity:1}
+    .update-panel{display:none;margin-top:20px;padding:20px;background:#fff;border:1px solid #e5e7eb;border-radius:16px}
+    .controls{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px}
+    input[type=file]{padding:8px;border:1px solid #e2e8f0;border-radius:8px;background:#fff}
+    .btn{padding:10px 14px;border:1px solid #111;background:#111;color:#fff;border-radius:6px;cursor:pointer}
+    .btn:hover{background:#000}
+    .hint{color:#64748b;font-size:12px}
+
+    /* Botão global (mostrar menu) — só aparece quando sidebar está oculta */
+    .show-menu-global{
+      position:fixed; left:20px; bottom:20px; z-index:950;
+      width:42px; height:42px; border-radius:50%;
+      display:none; align-items:center; justify-content:center;
+      background:#111; color:#fff; border:1px solid #000; cursor:pointer;
+      box-shadow:0 4px 12px rgba(0,0,0,.15);
+    }
+    .show-menu-global.visible{display:flex}
+    .show-menu-global:hover{background:#000}
+  </style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<aside class="sidebar" id="sidebar">
+  <nav>
+    <!-- KPIs -->
+    <div class="nav-item active" data-page="page-kpis">
+      <span class="icon" aria-hidden="true">
+        <!-- Material Symbols: show_chart -->
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M3 3h2v14h14v2H3V3zm16 4-4.5 6.01-3.5-4.51L7 12.99V15l3.5-4.5 3.5 4.5L21 7v-2l-2 2z"/>
+        </svg>
+      </span>
+      <span class="label">KPIs</span>
+    </div>
+
+    <!-- Reports -->
+    <div class="nav-item" data-page="page-reports">
+      <span class="icon" aria-hidden="true">
+        <!-- Material Symbols: insert_chart -->
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19 3H5c-1.1 0-2 .9-2 2v14h2V5h14V3zm-3 6h-2v8h2V9zm-4 4H10v4h2v-4zM7 13H5v6h2v-6z"/>
+        </svg>
+      </span>
+      <span class="label">Reports</span>
+    </div>
+
+    <!-- Admin -->
+    <div class="nav-item" data-page="page-admin">
+      <span class="icon" aria-hidden="true">
+        <!-- Material Symbols: settings -->
+        <svg viewBox="0 0 24 24" fill="currentColor">
+          <path d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1a7.03 7.03 0 0 0-1.69-.98l-.38-2.65A.5.5 0 0 0 13 2h-4c-.24 0 -.44.17-.49.41l-.38 2.65c-.6.23-1.16.53-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46c-.12.22-.07.49.12.64l2.11 1.65c-.05.32-.08.65-.08.98s.03.66.08.98L1.48 14.6a.5.5 0 0 0-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.53.45 1.09.82 1.69 1.05l.38 2.65c.05.24.25.41.49.41h4c.24 0 .44-.17.49-.41l.38-2.65c.6-.23 1.16-.6 1.69-1.05l2.49 1c.22 .08 .49 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.62zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/>
+        </svg>
+      </span>
+      <span class="label">Admin</span>
+    </div>
+  </nav>
+  <div class="toggle-arrow" id="toggleSidebar" title="Ocultar/mostrar menu">↔</div>
+</aside>
+
+<!-- HEADER -->
+<header>
+  <canvas id="bg-canvas"></canvas>
+  <div class="header-content">
+    <div class="left-group">
+      <img src="https://i0.wp.com/gcci.gy/wp-content/uploads/2025/01/logo-MODEC-1-Faneeza-Karim.png?ssl=1" alt="Logo">
+      <div class="v-line"></div>
+      <div class="title-group">
+        <div class="program-title">RAMPDOWN DASHBOARD</div>
+        <div class="subtitle">KPI Monitoring System • BETA</div>
+      </div>
+    </div>
+    <div id="sync-status" class="offline">
+      <div class="dot"></div> <span id="status-text">STATUS: CONNECTING</span>
+    </div>
+  </div>
+</header>
+
+<!-- PAGES -->
+<main class="container">
+  <!-- KPIs -->
+  <section id="page-kpis" class="page active">
+    <h1 id="main-results-title" class="section-results-title">LOADING RESULTS</h1>
+    <div class="kpi-grid">
+      <div class="card" id="card-oats">
+        <button class="card-button" onclick="expandCard('card-oats')">DETAILS</button>
+        <div class="card-title">OATS</div>
+        <div class="percentage" id="p-OATS">0%</div>
+        <div class="value-text">COMPLETED: <strong id="v-OATS">0 / 0</strong></div>
+        <div class="bar-container"><div id="b-OATS" class="bar-fill"></div></div>
+        <div class="card-extra"><div class="chart-container"><canvas id="chart-oats"></canvas></div></div>
+      </div>
+
+      <div class="card" id="card-sce">
+        <button class="card-button" onclick="expandCard('card-sce')">DETAILS</button>
+        <div class="card-title">SCE</div>
+        <div class="percentage" id="p-SCE">0%</div>
+        <div class="value-text">COMPLETED: <strong id="v-SCE">0 / 0</strong></div>
+        <div class="bar-container"><div id="b-SCE" class="bar-fill"></div></div>
+        <div class="card-extra"><div class="chart-container"><canvas id="chart-sce"></canvas></div></div>
+      </div>
+
+      <div class="card" id="card-crit1">
+        <button class="card-button" onclick="expandCard('card-crit1')">DETAILS</button>
+        <div class="card-title">CRIT #1</div>
+        <div class="percentage" id="p-CRIT1">0%</div>
+        <div class="value-text">COMPLETED: <strong id="v-CRIT1">0 / 0</strong></div>
+        <div class="bar-container"><div id="b-CRIT1" class="bar-fill"></div></div>
+        <div class="card-extra"><div class="chart-container"><canvas id="chart-crit1"></canvas></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Reports -->
+  <section id="page-reports" class="page">
+    <h1 class="section-results-title">OVERVIEW REPORTS</h1>
+
+    <div class="report-controls">
+      <button class="btn active" data-kpi="OATS">OATS</button>
+      <button class="btn" data-kpi="SCE">SCE</button>
+      <button class="btn" data-kpi="CRIT1">CRIT #1</button>
+    </div>
+
+    <div class="time-filter">
+      <label for="viewSelect">Visão:</label>
+      <select id="viewSelect">
+        <option value="year">Por Ano</option>
+        <option value="overview">Overview (Anos)</option>
+      </select>
+
+      <label for="overviewMode" id="overviewModeLabel" style="display:none;">Detalhe:</label>
+      <select id="overviewMode" style="display:none;">
+        <option value="years">Resumo Anual</option>
+        <option value="months">Meses (todos os anos)</option>
+      </select>
+
+      <label for="yearSelect" id="yearLabel">Year:</label>
+      <select id="yearSelect"></select>
+    </div>
+
+    <div class="reports-chart-wrap">
+      <canvas id="reportsChart" class="reports-chart"></canvas>
+    </div>
+    <p class="value-text" id="reportsHint">Selecione o KPI e a visão. Clique em um mês/ano para ver disciplinas.</p>
+
+    <div class="discipline-wrap">
+      <div class="discipline-header">
+        <div class="discipline-title">Discipline Overview</div>
+        <div class="value-text" id="discHint">Loading Firebase</div>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="discipline-table" id="disciplineTable">
+          <thead>
+            <tr>
+              <th>DISCIPLINE</th>
+              <th>TOTAL</th>
+              <th>EXECUTED (TECO)</th>
+              <th>TOTAL %</th>
+            </tr>
+          </thead>
+          <tbody id="disciplineTBody">
+            <tr><td colspan="4" class="value-text">Sem dados</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Planner -->
+  <section id="page-planner" class="page">
+    <h1 class="section-results-title">PLANNER</h1>
+    <div class="card">
+      <div class="card-title">Roadmap & Tasks</div>
+      <p class="value-text">Cronogramas, milestones e tarefas futuras.</p>
+    </div>
+  </section>
+
+  <!-- Admin -->
+  <section id="page-admin" class="page">
+    <h1 class="section-results-title">ADMIN</h1>
+    <div class="card">
+      <div class="card-title">Manual Update</div>
+      <button class="btn" onclick="checkPass()">Update Panel</button>
+    </div>
+
+    <div id="update-panel" class="update-panel">
+      <h2 style="font-family:var(--font-bold);margin-bottom:10px;">UPDATE SYSTEM - EXCEL</h2>
+      <div class="controls">
+        <input type="file" id="file-input" accept=".xlsx,.xls,.csv" />
+        <button class="btn" onclick="apply()">Aplicar ao Dashboard</button>
+        <button class="btn" style="background:#ef4444;border-color:#ef4444;" onclick="resetAllData()">Resetar Tudo</button>
+      </div>
+      <div class="hint">Double check the values given from the spreadsheet.</div>
+    </div>
+  </section>
+</main>
+
+<!-- Botão global (mostrar menu) — só visível quando oculto -->
+<div class="show-menu-global" id="showMenuGlobal" title="Mostrar Menu">»</div>
+
+<script>
+  // Firebase
+  const firebaseConfig={apiKey:"AIzaSyDpowacZTDw8AiOQFK1SOY85x8LyNk1088",authDomain:"rampdown-data.firebaseapp.com",projectId:"rampdown-data",databaseURL:"https://rampdown-data-default-rtdb.firebaseio.com",storageBucket:"rampdown-data.firebasestorage.app",messagingSenderId:"971612677227",appId:"1:971612677227:web:74c155f0d5092b96913d2e"};
+  if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+  const db=firebase.database();
+
+  const kpis=['OATS','SCE','CRIT1'];
+  const chartInstances={};
+  let workbook=null;
+
+  // Sidebar toggle + botão global
+  const sidebarEl=document.getElementById('sidebar');
+  const showMenuGlobalBtn=document.getElementById('showMenuGlobal');
+  const toggleSidebarBtn=document.getElementById('toggleSidebar');
+  let sidebarHidden=false;
+  function applyPresentationMode(hidden){
+    sidebarHidden = hidden;
+    if(hidden){
+      sidebarEl.classList.add('hidden');
+      document.body.classList.add('presentation-mode');
+      showMenuGlobalBtn.classList.add('visible');
+    }else{
+      sidebarEl.classList.remove('hidden');
+      document.body.classList.remove('presentation-mode');
+      showMenuGlobalBtn.classList.remove('visible');
+    }
+  }
+  toggleSidebarBtn.addEventListener('click',()=>applyPresentationMode(!sidebarHidden));
+  showMenuGlobalBtn.addEventListener('click',()=>applyPresentationMode(false));
+
+  // NAV SPA
+  const navItems=document.querySelectorAll('.nav-item'); const pages=document.querySelectorAll('.page');
+  navItems.forEach(item=>{
+    item.addEventListener('click',()=>{
+      navItems.forEach(n=>n.classList.remove('active')); item.classList.add('active');
+      const target=item.dataset.page;
+      pages.forEach(p=>p.classList.remove('active'));
+      document.getElementById(target).classList.add('active');
+      window.scrollTo({top:0,behavior:'smooth'});
+      if(target==='page-reports' && !reportsChart){
+        initReportsChart();
+        loadYearsFromFirebaseAndPopulateSelect();
+      }
+    });
+  });
+
+  // Helpers
+  const toYMD=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  const fmtLabel=ts=>{
+    const d=new Date(ts);
+    const dd=String(d.getDate()).padStart(2,'0');
+    const mm=String(d.getMonth()+1).padStart(2,'0');
+    const yyyy=d.getFullYear();
+    const hh=String(d.getHours()).padStart(2,'0');
+    const mi=String(d.getMinutes()).padStart(2,'0');
+    return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
+  };
+
+  // KPI Charts — registram mudanças do Firebase
+  function initChart(id,label,color){
+    const el=document.getElementById(id); if(!el) return;
+    const ctx=el.getContext('2d');
+    chartInstances[id]=new Chart(ctx,{
+      type:'line',
+      data:{labels:[],datasets:[
+        {label,data:[],borderColor:color,borderWidth:2,fill:false,tension:.45,pointRadius:2},
+        {label:'META 100%',data:[],borderColor:'rgba(0,0,0,.35)',borderWidth:1.5,borderDash:[6,4],pointRadius:0}
+      ]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{display:false},
+          tooltip:{callbacks:{
+            label:(ctx)=>{
+              const pct = typeof ctx.parsed === 'number' ? Number(ctx.parsed) : Number(ctx.parsed?.y ?? 0);
+              const raw = ctx.raw;
+              const cur = raw && typeof raw==='object' ? Number(raw.cur ?? NaN) : NaN;
+              const max = raw && typeof raw==='object' ? Number(raw.max ?? NaN) : NaN;
+              if(!isNaN(cur) && !isNaN(max) && max>0) return `${pct}% — ${cur} / ${max}`;
+              return `${pct}%`;
+            }
+          }}
+        },
+        interaction:{mode:'nearest',intersect:true,axis:'x'},
+        scales:{x:{display:false},y:{display:false,min:0,max:105}}
+      }
+    });
+  }
+  function expandCard(cardId){
+    const card=document.getElementById(cardId); if(!card) return;
+    const btn=card.querySelector('.card-button');
+    card.classList.toggle('expanded');
+    if(btn) btn.textContent=card.classList.contains('expanded')?'CLOSE':'DETAILS';
+  }
+
+  // Status
+  db.ref(".info/connected").on("value",(snap)=>{
+    const sd=document.getElementById('sync-status'); const st=document.getElementById('status-text');
+    if(snap.val()===true){ sd.className='online'; st.textContent='STATUS: ONLINE'; }
+    else { sd.className='offline'; st.textContent='STATUS: CONNECTING'; }
+  });
+
+  // KPIs live (cards)
+  db.ref('dashboard_live').on('value', (snapshot)=>{
+    const data=snapshot.val(); if(!data) return;
+    for(const id of kpis){
+      const cur=Number(data[id]?.cur||0);
+      const max=Number(data[id]?.max||1);
+      const pct=Math.floor((cur/max)*100);
+      const color=pct<50?'var(--danger)':pct<85?'var(--warning)':'var(--success)';
+      const vEl=document.getElementById(`v-${id}`);
+      const pEl=document.getElementById(`p-${id}`);
+      const bar=document.getElementById(`b-${id}`);
+      if(vEl) vEl.textContent=`${cur} / ${max}`;
+      if(pEl){ pEl.textContent=`${pct}%`; pEl.style.color=color; }
+      if(bar){ bar.style.width=Math.min(pct,100)+'%'; bar.style.backgroundColor=color; }
+    }
+  });
+
+  // KPI mini-séries últimas 2 janelas de mês para cobrir 7 dias
+  const DAYS_BACK=7;
+  function getLastDaysKeys(n){const out=[];const now=new Date();for(let i=n-1;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i);out.push(toYMD(d));}return out;}
+  kpis.forEach(kpi=>{
+    const cId=`chart-${kpi.toLowerCase()}`;
+    const now=new Date();
+    const ymKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    db.ref(`dashboard_events/${kpi}/${ymKey}`).on('value',snap=>{
+      const chart=chartInstances[cId]; if(!chart) return;
+      const events=snap.val()||{};
+      const merged=[];
+      Object.values(events).forEach(e=>merged.push(e));
+      const prev=new Date(now.getFullYear(),now.getMonth()-1,1);
+      const prevYm=`${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,'0')}`;
+      db.ref(`dashboard_events/${kpi}/${prevYm}`).once('value').then(prevSnap=>{
+        const prevEv=prevSnap.val()||{};
+        Object.values(prevEv).forEach(e=>merged.push(e));
+        merged.sort((a,b)=>Number(a.ts||0)-Number(b.ts||0));
+        const lastDaysSet=new Set(getLastDaysKeys(DAYS_BACK));
+        const filtered=merged.filter(e=>{
+          const d=new Date(e.ts||0);
+          const key=toYMD(d);
+          return lastDaysSet.has(key);
+        });
+        const labels=filtered.map(e=>fmtLabel(e.ts||Date.now()));
+        chart.data.labels=labels;
+        chart.data.datasets[0].data=filtered.map(e=>({x:fmtLabel(e.ts||Date.now()), y:Number(e.pct||0), cur:e.cur, max:e.max}));
+        chart.data.datasets[1].data=Array(labels.length).fill(100);
+        chart.update();
+      });
+    });
+  });
+
+  // IW39 índices
+  const IDX_A=0, IDX_D=8, IDX_J=14, IDX_L=15, IDX_M=12;
+
+  // Upload IW39
+  document.getElementById('file-input')?.addEventListener('change', async (ev)=>{
+    const file=ev.target.files?.[0]; if(!file) return;
+    const buf=await file.arrayBuffer();
+    workbook=XLSX.read(buf,{type:'array'});
+    alert('IW39 carregada. Você pode revisar e clicar em Aplicar ao Dashboard.');
+    refreshYearsFromWorkbook();
+  });
+
+  // Data utils
+  function normWS(s){return (s==null?'':String(s)).replace(/\u00A0/g,' ').trim();}
+  const EXCEL_1904_SYSTEM=false;
+  function fromExcelSerial(n){const base=EXCEL_1904_SYSTEM?new Date(Date.UTC(1904,0,1)):new Date(Date.UTC(1899,11,30));return new Date(base.getTime()+Math.round(n*86400000));}
+  function parseDateAny(v){
+    if(v instanceof Date && !isNaN(v)) return v;
+    if(typeof v==='number' && isFinite(v)){const dt=fromExcelSerial(v);return new Date(dt.getFullYear(),dt.getMonth(),dt.getDate());}
+    const s=normWS(v); if(!s) return null;
+    let m=/^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s); if(m){const dt=new Date(+m[1],+m[2]-1,+m[3]); if(!isNaN(dt)) return dt;}
+    m=/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/.exec(s); if(m){const y=+m[3]<100?2000+(+m[3]):+m[3]; const dt=new Date(y,+m[2]-1,+m[1]); if(!isNaN(dt)) return dt;}
+    const nat=new Date(s); if(!isNaN(nat)) return new Date(nat.getFullYear(),nat.getMonth(),nat.getDate());
+    return null;
+  }
+  const norm=(s)=>(s==null?'':String(s)).toUpperCase().replace(/\u00A0/g,' ').replace(/[–—−]/g,'-').replace(/\s+/g,' ').trim();
+  const SEP=String.raw`[\s,;:\/|()[\]{}<>=\\"'.-]`;
+  function matchOATS(v){const f=norm(v); return new RegExp(`(^|${SEP})OATS(${SEP}|$)`).test(f);}
+  function matchGENR0(v){const f=norm(v); return new RegExp(`(^|${SEP})GENR-0(${SEP}|$)`).test(f);}
+  function matchGENR1(v){const f=norm(v); return new RegExp(`(^|${SEP})GENR-1(${SEP}|$)`).test(f);}
+  function isTECO(v){return /\bTECO\b/.test(norm(v));}
+
+  // Heurística OATS
+  let oatsIgnoredCount = 0;
+  function shouldIgnoreOATSRow(desc, status, dt){
+    if (oatsIgnoredCount >= 4) return false;
+    const d = norm(desc), s = norm(status);
+    if (!dt || isNaN(dt.getTime())) { oatsIgnoredCount++; return true; }
+    if (!s || s.length < 2) { oatsIgnoredCount++; return true; }
+    if (d === 'OATS') { oatsIgnoredCount++; return true; }
+    return false;
+  }
+
+  // KPIs do mês atual
+  function monthRangeCurrent(){
+    const now=new Date();
+    return { start:new Date(now.getFullYear(),now.getMonth(),1,0,0,0,0), end:new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59,999), month:now.getMonth(), year:now.getFullYear() };
+  }
+  function sameMonthYear(d,m,y){ return d && d.getMonth()===m && d.getFullYear()===y; }
+
+  // Sumariza a planilha inteira por KPI, ano e mês
+  function summarizeWorkbookByYearMonth(wb){
+    const sheet=wb.SheetNames[0]; const ws=wb.Sheets[sheet];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
+    if(!rows.length) throw new Error('Aba vazia/incorreta');
+    const begin=parseDateAny(rows[0]?.[IDX_L])?0:1;
+
+    const result={ OATS:{}, SCE:{}, CRIT1:{} }; // {KPI:{[year]:{totals:[12], dones:[12]}}}
+
+    const ensureYear = (kpi, year)=>{
+      if(!result[kpi][year]) result[kpi][year]={ totals:Array(12).fill(0), dones:Array(12).fill(0) };
+      return result[kpi][year];
+    };
+
+    for(let i=begin;i<rows.length;i++){
+      const r=rows[i]; if(!r) continue;
+      const dt=parseDateAny(r[IDX_L]); if(!dt) continue;
+      const year=dt.getFullYear(); const month=dt.getMonth();
+
+      const desc = r[IDX_D];
+      const status = r[IDX_J];
+
+      if(matchOATS(desc)){
+        if (shouldIgnoreOATSRow(desc, status, dt)) continue;
+        const y=ensureYear('OATS',year);
+        y.totals[month]++; if(isTECO(status)) y.dones[month]++;
+      } else if(matchGENR0(desc)){
+        const y=ensureYear('SCE',year);
+        y.totals[month]++; if(isTECO(status)) y.dones[month]++;
+      } else if (matchGENR1(desc)) {
+        const y=ensureYear('CRIT1',year);
+        y.totals[month]++; if(isTECO(status)) y.dones[month]++;
+      }
+    }
+    return result;
+  }
+
+  // Reports: anos
+  function listYearsFromWorkbook(wb){
+    if(!wb) return [];
+    const sheet=wb.SheetNames[0]; const ws=wb.Sheets[sheet];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
+    const years=new Set();
+    for(let i=0;i<rows.length;i++){
+      const dt=parseDateAny(rows[i]?.[IDX_L]); if(!dt) continue;
+      years.add(dt.getFullYear());
+    }
+    return Array.from(years).sort((a,b)=>a-b);
+  }
+  function refreshYearsFromWorkbook(){
+    const sel=document.getElementById('yearSelect'); if(!sel) return;
+    sel.innerHTML='';
+    const years=listYearsFromWorkbook(workbook);
+    if(!years.length){ const opt=document.createElement('option'); opt.value=''; opt.textContent='Sem anos'; sel.appendChild(opt); return; }
+    years.forEach(y=>{ const opt=document.createElement('option'); opt.value=String(y); opt.textContent=String(y); sel.appendChild(opt); });
+    sel.value=String(years[years.length-1]);
+  }
+  async function loadYearsFromFirebaseAndPopulateSelect(){
+    const sel=document.getElementById('yearSelect'); if(!sel) return;
+    const snap=await db.ref('dashboard_reports').once('value');
+    sel.innerHTML='';
+    const yearsSet=new Set();
+    if(snap.exists()){
+      const all=snap.val()||{};
+      Object.values(all).forEach(kpiNode=>{
+        if(!kpiNode) return;
+        Object.keys(kpiNode).forEach(yearStr=>{
+          const y=Number(yearStr);
+          if(!isNaN(y)) yearsSet.add(y);
+        });
+      });
+    }
+    const years=[...yearsSet].sort((a,b)=>a-b);
+    const currentYear=new Date().getFullYear();
+    if(!years.length){
+      const opt=document.createElement('option'); opt.value=''; opt.textContent='Sem anos'; sel.appendChild(opt);
+      return;
+    }
+    years.forEach(y=>{ const opt=document.createElement('option'); opt.value=String(y); opt.textContent=String(y); sel.appendChild(opt); });
+    sel.value = years.includes(currentYear) ? String(currentYear) : String(years[years.length-1]);
+
+    const activeBtn=document.querySelector('.report-controls .btn.active');
+    if (activeBtn) await renderReportsByView(activeBtn.dataset.kpi);
+  }
+
+  // Reports chart + estado
+  let reportsChart=null;
+  const reportsState={
+    kpi:'OATS',
+    view:'year', // 'year' | 'overview'
+    overviewMode:'years', // 'years' | 'months'
+    year:null,
+    labels:[],
+    pct:[],
+    totals:[],
+    dones:[],
+    selectedIndex:null,
+    // Overview (anos)
+    years:[],
+    yearsPct:[],
+    yearsTotals:[],
+    yearsDones:[],
+    // Overview (meses de todos os anos)
+    monthsLabels:['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'],
+    seriesByYear:{} // { [year]: {pct:[12], totals:[12], dones:[12], color:string} }
+  };
+
+  function initReportsChart(){
+    const el=document.getElementById('reportsChart'); if(!el) return;
+    reportsChart=new Chart(el.getContext('2d'),{
+      type:'bar',
+      data:{labels:[],datasets:[
+        {label:'% Completed',data:[],backgroundColor:[],borderRadius:6,maxBarThickness:32}
+      ]},
+      options:{
+        responsive:true,maintainAspectRatio:false,
+        plugins:{
+          legend:{display:true},
+          tooltip:{callbacks:{
+            label:(ctx)=>{
+              if(reportsState.view==='overview' && reportsState.overviewMode==='months'){
+                const ds = reportsChart.data.datasets[ctx.datasetIndex];
+                const pct = Math.round((ctx.parsed.y??0));
+                const year = ds?.year;
+                const monthIdx = ctx.dataIndex;
+                const done = ds?.dones?.[monthIdx] ?? null;
+                const total = ds?.totals?.[monthIdx] ?? null;
+                if(total!=null && total>0 && done!=null) return `${year} ${reportsState.monthsLabels[monthIdx]} — ${pct}% — ${done}/${total}`;
+                return `${year} ${reportsState.monthsLabels[monthIdx]} — ${pct}%`;
+              }else if(reportsState.view==='overview'){
+                const pct=ctx.parsed.y ?? 0;
+                const i=ctx.dataIndex;
+                const exec=reportsState.yearsDones?.[i];
+                const tot=reportsState.yearsTotals?.[i];
+                if(typeof exec==='number' && typeof tot==='number') return `${pct}% — ${exec} / ${tot}`;
+                return `${pct}%`;
+              }else{
+                const pct=ctx.parsed.y ?? 0;
+                const i=ctx.dataIndex;
+                const exec=reportsState.dones?.[i];
+                const tot=reportsState.totals?.[i];
+                if(typeof exec==='number' && typeof tot==='number') return `${pct}% — ${exec} / ${tot}`;
+                return `${pct}%`;
+              }
+            }
+          }}
+        },
+        scales:{x:{grid:{display:false}},y:{min:0,max:100,ticks:{stepSize:20},grid:{color:'#eee'}}},
+        onClick: async (evt, elements) => {
+          if(reportsState.view==='overview' && reportsState.overviewMode==='months'){
+            const points = reportsChart.getElementsAtEventForMode(evt, 'nearest', {intersect:true}, true);
+            if(!points || !points.length) return;
+            const p = points[0];
+            const ds = reportsChart.data.datasets[p.datasetIndex];
+            const year = ds?.year;
+            if(year!=null){
+              await renderYearDisciplinesFromFirebase(reportsState.kpi, year);
+              const hint=document.getElementById('discHint');
+              if(hint) hint.textContent=`KPI ${reportsState.kpi} — ${year} ${reportsState.monthsLabels[p.index]}: disciplinas (snapshot anual do ano)`;
+            }
+            return;
+          }
+
+          if (!elements || !elements.length) return;
+          const index = elements[0].index;
+          if(reportsState.view==='overview'){
+            const year = reportsState.years[index];
+            reportsState.selectedIndex = reportsState.selectedIndex === index ? null : index;
+            applyBarSaturationOverview(reportsState.selectedIndex);
+            if(year!=null){
+              await renderYearDisciplinesFromFirebase(reportsState.kpi, year);
+              const hint=document.getElementById('discHint');
+              if(hint) hint.textContent=`KPI ${reportsState.kpi} — Ano ${year}: disciplinas (snapshot anual)`;
+            }
+            reportsChart.update();
+          }else{
+            if (reportsState.selectedIndex === index) {
+              reportsState.selectedIndex = null;
+              await renderYearDisciplinesFromFirebase(reportsState.kpi, reportsState.year);
+              applyBarSaturation(null);
+            } else {
+              reportsState.selectedIndex = index;
+              await filterDisciplinesByMonthIndex(index);
+              applyBarSaturation(index);
+            }
+            reportsChart.update();
+          }
+        }
+      }
+    });
+  }
+
+  function applyBarSaturation(activeIndex){
+    const colors = reportsChart.data.labels.map((_,i)=>{
+      if (activeIndex == null) return 'rgba(37, 99, 235, 1)';
+      return i===activeIndex ? 'rgba(37, 99, 235, 1)' : 'rgba(37, 99, 235, .25)';
+    });
+    if(reportsChart.config.type==='bar'){
+      reportsChart.data.datasets[0].backgroundColor = colors;
+    }
+  }
+  function applyBarSaturationOverview(activeIndex){
+    const colors = reportsChart.data.labels.map((_,i)=>{
+      if (activeIndex == null) return 'rgba(16, 185, 129, 1)';
+      return i===activeIndex ? 'rgba(16, 185, 129, 1)' : 'rgba(16, 185, 129, .25)';
+    });
+    if(reportsChart.config.type==='bar'){
+      reportsChart.data.datasets[0].backgroundColor = colors;
+    }
+  }
+
+  // Render lógico conforme visão
+  async function renderReportsByView(kpi){
+    const viewSel=document.getElementById('viewSelect');
+    const view = viewSel ? viewSel.value : 'year';
+    const overviewModeSel=document.getElementById('overviewMode');
+    const overviewMode = overviewModeSel ? overviewModeSel.value : 'years';
+
+    reportsState.kpi = kpi;
+    reportsState.view = view;
+    reportsState.overviewMode = overviewMode;
+
+    const yearLabel=document.getElementById('yearLabel');
+    const yearSelect=document.getElementById('yearSelect');
+    const overviewModeLabel=document.getElementById('overviewModeLabel');
+
+    if(view==='overview'){
+      if(yearLabel) yearLabel.style.display='none';
+      if(yearSelect) yearSelect.style.display='none';
+      if(overviewModeLabel) overviewModeLabel.style.display='';
+      if(overviewModeSel) overviewModeSel.style.display='';
+
+      if(overviewMode==='years'){
+        await loadOverviewAllYears(kpi);
+      }else{
+        await loadOverviewMonthsAllYears(kpi);
+      }
+    }else{
+      if(yearLabel) yearLabel.style.display='';
+      if(yearSelect) yearSelect.style.display='';
+      if(overviewModeLabel) overviewModeLabel.style.display='none';
+      if(overviewModeSel) overviewModeSel.style.display='none';
+      await updateReportsChartForKPI(kpi);
+    }
+  }
+
+  // Overview multi-anos: barras por ano
+  async function loadOverviewAllYears(kpi){
+    const hint=document.getElementById('reportsHint');
+    const snap = await db.ref(`dashboard_reports/${kpi}`).once('value');
+    const years=[], totals=[], dones=[], pct=[];
+    if(snap.exists()){
+      Object.entries(snap.val()||{}).forEach(([yearStr, node])=>{
+        const tArr = Array.isArray(node.totals)?node.totals:[];
+        const dArr = Array.isArray(node.dones)?node.dones:[];
+        const T = tArr.reduce((a,b)=>a+Number(b||0),0);
+        const D = dArr.reduce((a,b)=>a+Number(b||0),0);
+        if(T>0){
+          years.push(Number(yearStr));
+          totals.push(T);
+          dones.push(D);
+          pct.push(Math.floor((D/T)*100));
+        }
+      });
+    }
+    reportsState.years=years;
+    reportsState.yearsTotals=totals;
+    reportsState.yearsDones=dones;
+    reportsState.yearsPct=pct;
+
+    reportsChart.config.type='bar';
+    reportsChart.data.labels = years.map(String);
+    reportsChart.data.datasets = [{
+      label:'% Completed (Anual)',
+      data:pct,
+      backgroundColor:years.map(()=> 'rgba(16,185,129,1)'),
+      borderRadius:6,
+      maxBarThickness:32
+    }];
+    reportsChart.options.scales.y.min=0; reportsChart.options.scales.y.max=100;
+    applyBarSaturationOverview(null);
+    reportsChart.update();
+
+    const tbody=document.getElementById('disciplineTBody');
+    if(tbody){
+      tbody.innerHTML='';
+      const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=4; td.textContent='Clique em um ano para ver disciplinas.'; tr.appendChild(td); tbody.appendChild(tr);
+    }
+    if(hint) hint.textContent=`Overview por ano — KPI ${kpi}. Clique em um ano para ver disciplinas.`;
+  }
+
+  // Overview: TODAS as séries de meses por ano
+  async function loadOverviewMonthsAllYears(kpi){
+    const hint=document.getElementById('reportsHint');
+    const snap = await db.ref(`dashboard_reports/${kpi}`).once('value');
+    const months = reportsState.monthsLabels.slice();
+    const seriesByYear={};
+    if(snap.exists()){
+      const palette = [
+        '#2563eb','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899',
+        '#14b8a6','#84cc16','#eab308','#06b6d4','#a855f7','#f97316',
+        '#0ea5e9','#22c55e','#f43f5e'
+      ];
+      let ci=0;
+      Object.entries(snap.val()||{}).forEach(([yearStr, node])=>{
+        const year=Number(yearStr);
+        const tArr = Array.isArray(node.totals)? node.totals.slice(0,12) : Array(12).fill(0);
+        const dArr = Array.isArray(node.dones)?  node.dones.slice(0,12)  : Array(12).fill(0);
+        for(let i=0;i<12;i++){ tArr[i]=Number(tArr[i]||0); dArr[i]=Number(dArr[i]||0); }
+        const pct = tArr.map((t,i)=> t>0 ? Math.floor((dArr[i]/t)*100) : 0);
+        const color = palette[ci++ % palette.length];
+        seriesByYear[year]={pct, totals:tArr, dones:dArr, color};
+      });
+    }
+    reportsState.seriesByYear = seriesByYear;
+
+    reportsChart.config.type='line';
+    reportsChart.data.labels = months;
+    reportsChart.data.datasets = Object.entries(seriesByYear).map(([year, s])=>({
+      label:`${year}`,
+      year:Number(year),
+      data:s.pct,
+      borderColor:s.color,
+      backgroundColor:s.color,
+      tension:.35,
+      fill:false,
+      pointRadius:3,
+      pointHoverRadius:5,
+      totals:s.totals,
+      dones:s.dones
+    }));
+    reportsChart.options.scales.y.min=0; reportsChart.options.scales.y.max=100;
+    reportsChart.update();
+
+    const tbody=document.getElementById('disciplineTBody');
+    if(tbody){
+      tbody.innerHTML='';
+      const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=4; td.textContent='Clique em um ponto (ano/mês) para ver disciplinas do ano.'; tr.appendChild(td); tbody.appendChild(tr);
+    }
+    if(hint) hint.textContent=`Overview por meses (todos os anos) — KPI ${kpi}.`;
+  }
+
+  async function updateReportsChartForKPI(kpi){
+    const hint=document.getElementById('reportsHint');
+    const sel=document.getElementById('yearSelect');
+    if(!reportsChart) initReportsChart();
+
+    const year = sel && sel.value ? Number(sel.value) : null;
+    if (!year) { if(hint) hint.textContent='Select year.'; return; }
+
+    const snap = await db.ref(`dashboard_reports/${kpi}/${year}`).once('value');
+    let series = { labels: [], totals: [], dones: [], pct: [] };
+
+    if (snap.exists()) {
+      const val = snap.val() || {};
+      series.labels = Array.isArray(val.labels) ? val.labels : [];
+      series.totals = Array.isArray(val.totals) ? val.totals : [];
+      series.dones  = Array.isArray(val.dones)  ? val.dones  : [];
+      series.pct    = Array.isArray(val.pct)    ? val.pct    : [];
+      if (hint) hint.textContent = `Viewing ${kpi} — Year ${year} (Firebase)`;
+    } else {
+      if (hint) hint.textContent='Empty results - Check Firebase for details';
+    }
+
+    reportsState.kpi=kpi; reportsState.year=year; reportsState.selectedIndex=null;
+    reportsState.labels=series.labels; reportsState.totals=series.totals; reportsState.dones=series.dones; reportsState.pct=series.pct;
+
+    reportsChart.config.type='bar';
+    reportsChart.data.labels = series.labels;
+    reportsChart.data.datasets = [{
+      label:'% Completed',
+      data: series.pct,
+      backgroundColor: series.labels.map(()=> 'rgba(37,99,235,1)'),
+      borderRadius:6,
+      maxBarThickness:32
+    }];
+    reportsChart.options.scales.y.min=0; reportsChart.options.scales.y.max=100;
+    applyBarSaturation(null);
+    reportsChart.update();
+
+    await renderYearDisciplinesFromFirebase(kpi, year);
+  }
+
+  // Disciplinas snapshots
+  async function renderYearDisciplinesFromFirebase(kpi, year){
+    const tbody=document.getElementById('disciplineTBody'); const hint=document.getElementById('discHint');
+    if(!tbody) return;
+    tbody.innerHTML='';
+    const snapYear=await db.ref(`dashboard_disciplines/${kpi}/${year}`).once('value');
+    if(snapYear.exists()){
+      const val=snapYear.val()||{};
+      const yearTotal=Array.isArray(val.yearTotal)?val.yearTotal:[];
+      if(yearTotal.length){
+        renderDisciplineRows(yearTotal);
+        if(hint) hint.textContent=`KPI ${kpi} — Ano ${year}: disciplinas (snapshot anual)`;
+        return;
+      }
+    }
+    const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=4; td.textContent='Select month to see details'; tr.appendChild(td); tbody.appendChild(tr);
+    if(hint) hint.textContent=`KPI ${kpi} — Year ${year}`;
+  }
+
+  function renderDisciplineRows(rows){
+    const tbody=document.getElementById('disciplineTBody');
+    if(!tbody) return;
+    tbody.innerHTML='';
+    if(!rows || !rows.length){
+      const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=4; td.textContent='Sem dados.'; tr.appendChild(td); tbody.appendChild(tr); return;
+    }
+    rows.forEach(r=>{
+      const tr=document.createElement('tr');
+      const tdn=document.createElement('td'); tdn.textContent=r.name;
+      const ttt=document.createElement('td'); ttt.textContent=r.total;
+      const tdd=document.createElement('td'); tdd.textContent=r.done;
+      const tpp=document.createElement('td'); tpp.textContent=(r.pct!=null? r.pct : (r.total>0? Math.floor((r.done/r.total)*100):0))+'%';
+      tr.appendChild(tdn); tr.appendChild(ttt); tr.appendChild(tdd); tr.appendChild(tpp);
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function filterDisciplinesByMonthIndex(index){
+    const kpi=reportsState.kpi; const year=reportsState.year;
+    const lbl=reportsState.labels[index];
+    const discHint=document.getElementById('discHint');
+    const tbody=document.getElementById('disciplineTBody');
+    if(!lbl || !tbody) return;
+
+    const snap=await db.ref(`dashboard_disciplines/${kpi}/${year}`).once('value');
+    if(snap.exists()){
+      const val=snap.val()||{};
+      const labels=Array.isArray(val.labels)?val.labels:[];
+      const perMonth=Array.isArray(val.perMonth)?val.perMonth:[];
+      if(labels[index]===lbl && Array.isArray(perMonth[index])){
+        renderDisciplineRows(perMonth[index]);
+        if(discHint) discHint.textContent=`KPI ${kpi} — ${lbl}: Disciplines (snapshot)`;
+        return;
+      }
+    }
+    await renderYearDisciplinesFromFirebase(kpi, year);
+  }
+
+  // APPLY/RESET/ADMIN
+  async function apply(){
+    try{
+      if(!workbook){ alert('Nenhuma planilha carregada. Faça upload da IW39 antes de aplicar.'); return; }
+
+      // Guarda filtros atuais (KPI ativo e visão)
+      const activeBtn=document.querySelector('.report-controls .btn.active');
+      const currentKPI = activeBtn ? activeBtn.dataset.kpi : 'OATS';
+      const viewSel=document.getElementById('viewSelect');
+      const overviewModeSel=document.getElementById('overviewMode');
+      const yearSel=document.getElementById('yearSelect');
+      const currentView = viewSel ? viewSel.value : 'year';
+      const currentOverviewMode = overviewModeSel ? overviewModeSel.value : 'years';
+      const currentYear = yearSel && yearSel.value ? Number(yearSel.value) : null;
+
+      // 1) Sumariza toda a planilha por KPI/Ano/Mês
+      const summary = summarizeWorkbookByYearMonth(workbook);
+      const ts = Date.now();
+
+      // 2) Monta updates: merge com anos existentes e atualiza arrays
+      const updates={};
+      const LABELS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+      for(const kpi of ['OATS','SCE','CRIT1']){
+        const years = Object.keys(summary[kpi]).map(Number);
+        for(const year of years){
+          const nodePath=`dashboard_reports/${kpi}/${year}`;
+          // Ler existente para mesclar
+          /* eslint-disable no-await-in-loop */
+          const snap = await db.ref(nodePath).once('value');
+          const existing = snap.exists()? (snap.val()||{}) : {};
+          const totals = Array.isArray(existing.totals)? existing.totals.slice() : Array(12).fill(0);
+          const dones  = Array.isArray(existing.dones)?  existing.dones.slice()  : Array(12).fill(0);
+          const pct    = Array.isArray(existing.pct)?    existing.pct.slice()    : Array(12).fill(0);
+
+          const sumYear = summary[kpi][year];
+          for(let m=0;m<12;m++){
+            // sobrescreve com valores da planilha (fonte da verdade)
+            totals[m] = Number(sumYear.totals[m]||0);
+            dones[m]  = Number(sumYear.dones[m]||0);
+            pct[m]    = totals[m]>0 ? Math.floor((dones[m]/totals[m])*100) : 0;
+          }
+
+          updates[`${nodePath}/labels`] = LABELS;
+          updates[`${nodePath}/totals`] = totals;
+          updates[`${nodePath}/dones`]  = dones;
+          updates[`${nodePath}/pct`]    = pct;
+
+          // Atualiza snapshot live apenas para o ano/mês atual (opcionalmente poderia ser o último mês com dados)
+          const now=new Date();
+          if(year===now.getFullYear()){
+            const m=now.getMonth();
+            const cur=dones[m]||0, max=totals[m]||1, p=max>0? Math.floor((cur/max)*100):0;
+            updates[`dashboard_live/${kpi}`] = { cur, max: Math.max(max,1), pct:p, ts };
+            const ymKey = `${year}-${String(m+1).padStart(2,'0')}`;
+            const newEventKey = db.ref(`dashboard_events/${kpi}/${ymKey}`).push().key;
+            updates[`dashboard_events/${kpi}/${ymKey}/${newEventKey}`] = { cur, max: Math.max(max,1), pct:p, ts };
+          }
+        }
+      }
+
+      // 3) Aplica updates
+      await db.ref().update(updates);
+
+      alert('Planilha aplicada: KPIs sumarizados por mês/ano no Firebase. Gráficos serão atualizados.');
+
+      // 4) Recarrega anos do Firebase (caso novos anos tenham aparecido)
+      await loadYearsFromFirebaseAndPopulateSelect();
+
+      // 5) Restaura filtros e re-render
+      if(viewSel) viewSel.value = currentView;
+      if(overviewModeSel) overviewModeSel.value = currentOverviewMode;
+      if(yearSel && currentYear!=null) yearSel.value = String(currentYear);
+
+      if(currentView==='overview'){
+        await renderReportsByView(currentKPI);
+      }else{
+        // Por Ano
+        await updateReportsChartForKPI(currentKPI);
+      }
+
+    }catch(err){
+      console.error(err);
+      alert('Falha ao aplicar dados ao Firebase. Verifique o console para detalhes.');
+    }
+  }
+
+  async function resetAllData(){ alert('Ajuste sua rotina de RESET aqui (mantida do projeto).'); }
+  function checkPass(){
+    if(prompt('Senha:')==='222324'){
+      const panel=document.getElementById('update-panel');
+      if(panel){ panel.style.display='block'; window.scrollTo({top:panel.offsetTop-20,behavior:'smooth'}); }
+    }
+  }
+
+  // Onload
+  window.onload=async ()=>{
+    // Waves
+    const canvas=document.getElementById('bg-canvas'); const ctx=canvas?canvas.getContext('2d'):null; let count=0;
+    function init(){ if(canvas){ canvas.width=window.innerWidth; canvas.height=100; } }
+    function draw(){
+      if(!ctx||!canvas) return;
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      const centerY=canvas.height/2, color='rgba(36,80,255,1)';
+      const waves=[
+        { amplitude:Math.max(34,canvas.height*.09), frequency:.0046, phase:0, lineWidth:2.8 },
+        { amplitude:Math.max(28,canvas.height*.08), frequency:.0062, phase:Math.PI/2.6, lineWidth:2.6 },
+        { amplitude:Math.max(22,canvas.height*.07), frequency:.0042, phase:Math.PI/1.6, lineWidth:2.4 }
+      ];
+      for(const w of waves){
+        ctx.beginPath(); ctx.lineWidth=w.lineWidth; ctx.strokeStyle=color;
+        for(let x=0;x<canvas.width;x+=1){
+          const y=centerY+Math.sin(x*w.frequency+count+w.phase)*w.amplitude;
+          if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+      }
+      count+=.01; requestAnimationFrame(draw);
+    }
+    window.addEventListener('resize',init);
+    init(); draw();
+
+    // Título mês
+    const meses=["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
+    const titleEl=document.getElementById('main-results-title'); if(titleEl) titleEl.textContent=`${meses[new Date().getMonth()]} RESULTS`;
+
+    // KPIs charts
+    initChart('chart-oats','OATS','#2563eb');
+    initChart('chart-sce','SCE','#10b981');
+    initChart('chart-crit1','CRIT','#f59e0b');
+
+    // Reports
+    initReportsChart();
+    await loadYearsFromFirebaseAndPopulateSelect();
+  };
+
+  // Botões KPI (Reports)
+  document.addEventListener('click', async (e)=>{
+    const btn=e.target.closest('.report-controls .btn'); if(!btn) return;
+    document.querySelectorAll('.report-controls .btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    await renderReportsByView(btn.dataset.kpi);
+  });
+
+  // Selects
+  document.getElementById('yearSelect')?.addEventListener('change', async ()=>{
+    const activeBtn=document.querySelector('.report-controls .btn.active');
+    if(activeBtn) await renderReportsByView(activeBtn.dataset.kpi);
+  });
+  document.getElementById('viewSelect')?.addEventListener('change', async ()=>{
+    const activeBtn=document.querySelector('.report-controls .btn.active');
+    if(activeBtn) await renderReportsByView(activeBtn.dataset.kpi);
+  });
+  document.getElementById('overviewMode')?.addEventListener('change', async ()=>{
+    const activeBtn=document.querySelector('.report-controls .btn.active');
+    if(activeBtn) await renderReportsByView(activeBtn.dataset.kpi);
+  });
+</script>
+</body>
+</html>
