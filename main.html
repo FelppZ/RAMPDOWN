@@ -1,11 +1,11 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>RAMPDOWN | DASHBOARD</title>
   <link rel="icon" type="image/png" href="https://logosandtypes.com/wp-content/uploads/2025/05/MODEC-scaled.png">
-  <!-- Firebase e Chart.js -->
+  <!-- Firebase and Chart.js -->
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-database-compat.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -33,7 +33,7 @@
       color:var(--text-dark);min-height:100vh;font-family:var(--font-light)
     }
 
-    /* HEADER — novo com gradientes e ondas */
+    /* HEADER — new with gradients and waves */
     header{
       position:sticky;top:0;background:var(--tech-black);height:100px;display:flex;align-items:center;padding:0 50px;overflow:hidden;z-index:1000;
       box-shadow: 0 8px 24px rgba(0,0,0,.22);
@@ -85,7 +85,7 @@
     .container{max-width:1300px;margin:40px auto;padding:0 40px;margin-left:220px;transition:margin-left .25s ease}
     .presentation-mode .container{margin-left:0}
 
-    /* Páginas + transições suaves */
+    /* Pages + smooth transitions */
     .page{display:block;opacity:0;transform: translateY(8px);pointer-events:none;transition: opacity var(--page-fade-duration) var(--page-fade-ease), transform var(--page-fade-duration) var(--page-fade-ease);position: relative;z-index: 0;}
     .page.active{opacity:1;transform: translateY(0);pointer-events:auto;z-index: 1;}
     .page:not(.active){ visibility:hidden; height:0; overflow:hidden; }
@@ -127,7 +127,7 @@
     .reports-chart{height:300px}
     .reports-hint{ color:#334155; font-size:.9rem; margin-top:8px; }
 
-    /* Disciplinas */
+    /* Disciplines */
     .discipline-wrap{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin-top:16px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
     .discipline-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
     .discipline-title{font-family:var(--font-bold);font-size:1.05rem}
@@ -151,7 +151,7 @@
     .btn:hover{background:#000}
     .hint{color:#64748b;font-size:12px}
 
-    /* Botão global (mostrar menu) — só aparece quando sidebar está oculta */
+    /* Global show menu button — visible only when sidebar hidden */
     .show-menu-global{
       position:fixed; left:20px; bottom:20px; z-index:950;
       width:42px; height:42px; border-radius:50%;
@@ -213,16 +213,16 @@
     <div class="nav-item" data-page="page-admin">
       <span class="icon" aria-hidden="true">
         <svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1a7.03 7.03 0 0 0-1.69-.98l-.38-2.65A.5.5 0 0 0 13 2h-4c-.24 0 -.44.17-.49.41l-.38 2.65c-.6.23-1.16.53-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46c-.12.22-.07.49.12.64l2.11 1.65c-.05.32-.08.65-.08.98s.03.66.08.98L1.48 14.6a.5.5 0 0 0-.12.64l-2 3.46c.12.22.39.3.61.22l 2.49-1c.53.45 1.09.82 1.69 1.05l.38 2.65c.05.24.25.41.49.41h4c.24 0 .44-.17.49-.41l.38-2.65c.6-.23 1.16-.6 1.69-1.05l2.49 1c.22 .08 .49 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.62zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/>
+          <path d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1a7.03 7.03 0 0 0-1.69-.98l-.38-2.65A.5.5 0 0 0 13 2h-4c-.24 0 -.44.17-.49.41l-.38 2.65c-.6.23-1.16.53-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46c-.12.22-.07.49.12.64l2.11 1.65c-.05.32-.08.65-.08.98s.03.66.08.98L1.48 14.6a.5.5 0 0 0-.12.64l-2 3.46c.12.22.39.3.61.22l 2.49-1c.53.45 1.09.82 1.69 1.05l.38 2.65c.05.24.25.41.49.41h4c.24 0 .44-.17.49-.41l.38-2.65c.6-.23 1.16-.6 1.69-1.05l 2.49 1c.22 .08 .49 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.62zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/>
         </svg>
       </span>
       <span class="label">Admin</span>
     </div>
   </nav>
-  <div class="toggle-arrow" id="toggleSidebar" title="Ocultar/mostrar menu">↔</div>
+  <div class="toggle-arrow" id="toggleSidebar" title="Show/Hide menu">↔</div>
 </aside>
 
-<!-- HEADER (novo) -->
+<!-- HEADER (new) -->
 <header>
   <canvas id="bg-canvas"></canvas>
   <div class="header-content">
@@ -289,13 +289,13 @@
       <label for="viewSelect">View:</label>
       <select id="viewSelect">
         <option value="year">By Year</option>
-        <option value="overview">Overview (Anos)</option>
+        <option value="overview">Overview (Years)</option>
       </select>
 
-      <label for="overviewMode" id="overviewModeLabel" style="display:none;">Detalhe:</label>
+      <label for="overviewMode" id="overviewModeLabel" style="display:none;">Detail:</label>
       <select id="overviewMode" style="display:none;">
-        <option value="years">Resumo Anual</option>
-        <option value="months">Meses (todos os anos)</option>
+        <option value="years">Annual Summary</option>
+        <option value="months">Months (all years)</option>
       </select>
 
       <label for="yearSelect" id="yearLabel">Year:</label>
@@ -305,7 +305,7 @@
     <div class="reports-chart-wrap">
       <canvas id="reportsChart" class="reports-chart"></canvas>
     </div>
-    <p class="reports-hint" id="reportsHint">Selecione o KPI e a visão. Clique em um mês/ano para ver disciplinas.</p>
+    <p class="reports-hint" id="reportsHint">Select the KPI and view. Click a month/year to see disciplines.</p>
 
     <div class="discipline-wrap">
       <div class="discipline-header">
@@ -323,7 +323,7 @@
             </tr>
           </thead>
           <tbody id="disciplineTBody">
-            <tr><td colspan="4" class="value-text">Sem dados</td></tr>
+            <tr><td colspan="4" class="value-text">No data</td></tr>
           </tbody>
         </table>
       </div>
@@ -350,7 +350,7 @@
   </section>
 </main>
 
-<div class="show-menu-global" id="showMenuGlobal" title="Mostrar Menu">»</div>
+<div class="show-menu-global" id="showMenuGlobal" title="Show Menu">»</div>
 <div class="notify-container" id="notifyContainer" aria-live="polite"></div>
 
 <script>
@@ -374,14 +374,14 @@
         ${title?`<div class="title">${title}</div>`:''}
         <div class="msg">${msg}</div>
       </div>
-      <div class="close" aria-label="Fechar" title="Fechar">✕</div>`;
+      <div class="close" aria-label="Close" title="Close">✕</div>`;
     const closer=el.querySelector('.close');
     closer.addEventListener('click',()=>{ el.remove(); });
     container.appendChild(el);
     setTimeout(()=>{ el.remove(); }, 6000);
   }
 
-  // Sidebar toggle + botão global
+  // Sidebar toggle + global button
   const sidebarEl=document.getElementById('sidebar');
   const showMenuGlobalBtn=document.getElementById('showMenuGlobal');
   const toggleSidebarBtn=document.getElementById('toggleSidebar');
@@ -401,7 +401,7 @@
   toggleSidebarBtn.addEventListener('click',()=>applyPresentationMode(!sidebarHidden));
   showMenuGlobalBtn.addEventListener('click',()=>applyPresentationMode(false));
 
-  // NAV SPA com transição suave
+  // NAV SPA with smooth transition
   const navItems=document.querySelectorAll('.nav-item');
   const pages=document.querySelectorAll('.page');
   function setActivePage(targetId){
@@ -425,7 +425,7 @@
     });
   });
 
-  // Header — ondas animadas
+  // Header — animated waves
   const bgCanvas = document.getElementById('bg-canvas');
   const bgCtx = bgCanvas?.getContext('2d');
   let bgCount = 0;
@@ -473,7 +473,7 @@
     return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
   };
 
-  // CORREÇÃO MARÇO
+  // MARCH FIX
   const EXCEL_1904_SYSTEM=false;
   function excelSerialToDate(n){const base = EXCEL_1904_SYSTEM ? Date.UTC(1904,0,1) : Date.UTC(1899,11,30);return new Date(base + Math.round(n*86400000));}
   function normalizeLocalDate(d){return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0,0,0,0);}
@@ -498,7 +498,7 @@
       type:'line',
       data:{labels:[],datasets:[
         {label,data:[],borderColor:color,borderWidth:2,fill:false,tension:.45,pointRadius:2},
-        {label:'META 100%',data:[],borderColor:'rgba(0,0,0,.35)',borderWidth:1.5,borderDash:[6,4],pointRadius:0}
+        {label:'TARGET 100%',data:[],borderColor:'rgba(0,0,0,.35)',borderWidth:1.5,borderDash:[6,4],pointRadius:0}
       ]},
       options:{responsive:true,maintainAspectRatio:false,
         plugins:{legend:{display:false},tooltip:{callbacks:{label:(ctx)=>{
@@ -545,7 +545,7 @@
     }
   });
 
-  // KPI mini-séries (7 dias, cobrindo mês atual + anterior)
+  // KPI mini-series (7 days, covering current + previous month)
   const DAYS_BACK=7;
   function getLastDaysKeys(n){const out=[];const now=new Date();for(let i=n-1;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i);out.push(toYMD(d));}return out;}
   kpis.forEach(kpi=>{
@@ -578,24 +578,24 @@
     });
   });
 
-  // IW39 índices (ajuste conforme colunas da sua planilha)
+  // IW39 column indexes (adjust to your spreadsheet)
   const IDX_A=0, IDX_D=8, IDX_J=14, IDX_L=15, IDX_M=12;
 
-  // Upload IW39
+  // IW39 Upload
   document.getElementById('file-input')?.addEventListener('change', async (ev)=>{
-    const file=ev.target.files?.[0]; if(!file){ notify('Nenhum arquivo selecionado.','warning','Upload'); return; }
+    const file=ev.target.files?.[0]; if(!file){ notify('No file selected.','warning','Upload'); return; }
     try{
       const buf=await file.arrayBuffer();
       workbook=XLSX.read(buf,{type:'array'});
-      notify('IW39 Table loaded successfully, click update to implement at dashboard.','info','Upload completed');
+      notify('IW39 table loaded successfully, click update to apply to dashboard.','info','Upload completed');
       refreshYearsFromWorkbook();
     }catch(e){
       console.error(e);
-      notify('Falha ao ler o arquivo. Verifique o formato.','error','Upload');
+      notify('Failed to read the file. Check the format.','error','Upload');
     }
   });
 
-  // Normalização / matching
+  // Normalization / matching
   const norm=(s)=>(s==null?'':String(s)).toUpperCase().replace(/\u00A0/g,' ').replace(/[–—−]/g,'-').replace(/\s+/g,' ').trim();
   const SEP=String.raw`[\s,;:\/|()[\]{}<>=\\"'.-]`;
   function matchOATS(v){const f=norm(v); return new RegExp(`(^|${SEP})OATS(${SEP}|$)`).test(f);}
@@ -603,7 +603,7 @@
   function matchGENR1(v){const f=norm(v); return new RegExp(`(^|${SEP})GENR-1(${SEP}|$)`).test(f);}
   function isTECO(v){return /\bTECO\b/.test(norm(v));}
 
-  // Heurística OATS (opcional)
+  // OATS heuristic (optional)
   let oatsIgnoredCount = 0;
   function shouldIgnoreOATSRow(desc, status, dt){
     if (oatsIgnoredCount >= 4) return false;
@@ -614,7 +614,7 @@
     return false;
   }
 
-  // Datas
+  // Dates
   function excelSerialToDate(n){const base = EXCEL_1904_SYSTEM ? Date.UTC(1904,0,1) : Date.UTC(1899,11,30);return new Date(base + Math.round(n*86400000));}
   function normalizeLocalDate(d){return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0,0,0,0);}
   function parseDateAny(v){
@@ -630,11 +630,11 @@
     return null;
   }
 
-  // Sumariza por KPI/Ano/Mês
+  // Summarize by KPI/Year/Month
   function summarizeWorkbookByYearMonth(wb){
     const sheet=wb.SheetNames[0]; const ws=wb.Sheets[sheet];
     const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
-    if(!rows.length) throw new Error('Aba vazia/incorreta');
+    if(!rows.length) throw new Error('Empty/incorrect sheet');
     const begin=parseDateAny(rows[0]?.[IDX_L])?0:1;
 
     const result={ OATS:{}, SCE:{}, CRIT1:{} };
@@ -664,11 +664,11 @@
     return result;
   }
 
-  // Sumariza por KPI/Ano/Mês/Disciplina
+  // Summarize by KPI/Year/Month/Discipline
   function summarizeWorkbookByDiscipline(wb){
     const sheet=wb.SheetNames[0]; const ws=wb.Sheets[sheet];
     const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
-    if(!rows.length) throw new Error('Aba vazia/incorreta');
+    if(!rows.length) throw new Error('Empty/incorrect sheet');
     const begin=parseDateAny(rows[0]?.[IDX_L])?0:1;
 
     const map = { OATS:{}, SCE:{}, CRIT1:{} };
@@ -733,7 +733,7 @@
     return out;
   }
 
-  // Reports: anos
+  // Reports: years
   function listYearsFromWorkbook(wb){
     if(!wb) return [];
     const sheet=wb.SheetNames[0]; const ws=wb.Sheets[sheet];
@@ -749,51 +749,51 @@
     const sel=document.getElementById('yearSelect'); if(!sel) return;
     sel.innerHTML='';
     const years=listYearsFromWorkbook(workbook);
-    if(!years.length){ const opt=document.createElement('option'); opt.value=''; opt.textContent='Sem anos'; sel.appendChild(opt); return; }
+    if(!years.length){ const opt=document.createElement('option'); opt.value=''; opt.textContent='No years'; sel.appendChild(opt); return; }
     years.forEach(y=>{ const opt=document.createElement('option'); opt.value=String(y); opt.textContent=String(y); sel.appendChild(opt); });
     sel.value=String(years[years.length-1]);
   }
   async function loadYearsFromFirebaseAndPopulateSelect(){
-  const sel=document.getElementById('yearSelect'); if(!sel) return;
-  const snap=await db.ref('dashboard_reports').once('value');
-  sel.innerHTML='';
-  const yearsSet=new Set();
-  if(snap.exists()){
-    const all=snap.val()||{};
-    Object.values(all).forEach(kpiNode=>{
-      if(!kpiNode) return;
-      Object.keys(kpiNode).forEach(yearStr=>{
-        const y=Number(yearStr);
-        if(!isNaN(y)) yearsSet.add(y);
+    const sel=document.getElementById('yearSelect'); if(!sel) return;
+    const snap=await db.ref('dashboard_reports').once('value');
+    sel.innerHTML='';
+    const yearsSet=new Set();
+    if(snap.exists()){
+      const all=snap.val()||{};
+      Object.values(all).forEach(kpiNode=>{
+        if(!kpiNode) return;
+        Object.keys(kpiNode).forEach(yearStr=>{
+          const y=Number(yearStr);
+          if(!isNaN(y)) yearsSet.add(y);
+        });
       });
+    }
+    const years=[...yearsSet].sort((a,b)=>a-b);
+    const currentYear=new Date().getFullYear();
+
+    if(!years.length){
+      const opt=document.createElement('option');
+      opt.value=''; opt.textContent='No years';
+      sel.appendChild(opt);
+      return;
+    }
+
+    years.forEach(y=>{
+      const opt=document.createElement('option');
+      opt.value=String(y);
+      opt.textContent=String(y);
+      sel.appendChild(opt);
     });
-  }
-  const years=[...yearsSet].sort((a,b)=>a-b);
-  const currentYear=new Date().getFullYear();
 
-  if(!years.length){
-    const opt=document.createElement('option');
-    opt.value=''; opt.textContent='Sem anos';
-    sel.appendChild(opt);
-    return;
+    // Set CURRENT YEAR as default (if exists), otherwise the latest available
+    sel.value = years.includes(currentYear) ? String(currentYear) : String(years[years.length-1]);
+
+    // Immediately render the chart with the selected year
+    const activeBtn=document.querySelector('.report-controls .btn.active');
+    if (activeBtn) await renderReportsByView(activeBtn.dataset.kpi);
   }
 
-  years.forEach(y=>{
-    const opt=document.createElement('option');
-    opt.value=String(y);
-    opt.textContent=String(y);
-    sel.appendChild(opt);
-  });
-
-  // Define o ANO ATUAL como padrão (se existir), senão usa o último disponível
-  sel.value = years.includes(currentYear) ? String(currentYear) : String(years[years.length-1]);
-
-  // Renderiza imediatamente o gráfico com o ano definido acima
-  const activeBtn=document.querySelector('.report-controls .btn.active');
-  if (activeBtn) await renderReportsByView(activeBtn.dataset.kpi);
-}
-
-  // Reports chart + estado
+  // Reports chart + state
   let reportsChart=null;
   const reportsState={
     kpi:'OATS',
@@ -859,7 +859,7 @@
             if(year!=null){
               await renderYearDisciplinesFromFirebase(reportsState.kpi, year);
               const hint=document.getElementById('discHint');
-              if(hint) hint.textContent=`KPI ${reportsState.kpi} — ${year} ${reportsState.monthsLabels[p.index]}: disciplinas (snapshot anual do ano)`;
+              if(hint) hint.textContent=`KPI ${reportsState.kpi} — ${year} ${reportsState.monthsLabels[p.index]}: disciplines (annual snapshot)`;
             }
             return;
           }
@@ -873,7 +873,7 @@
             if(year!=null){
               await renderYearDisciplinesFromFirebase(reportsState.kpi, year);
               const hint=document.getElementById('discHint');
-              if(hint) hint.textContent=`KPI ${reportsState.kpi} — Ano ${year}: disciplinas (snapshot anual)`;
+              if(hint) hint.textContent=`KPI ${reportsState.kpi} — Year ${year}: disciplines (annual snapshot)`;
             }
             reportsChart.update();
           }else{
@@ -907,7 +907,7 @@
     if(reportsChart.config.type==='bar'){ reportsChart.data.datasets[0].backgroundColor = colors; }
   }
 
-  // Render lógico conforme visão (mantido)
+  // Render logic by view (kept)
   async function renderReportsByView(kpi){
     const viewSel=document.getElementById('viewSelect');
     const view = viewSel ? viewSel.value : 'year';
@@ -939,7 +939,7 @@
     }
   }
 
-  // Overview multi-anos
+  // Overview multi-years
   async function loadOverviewAllYears(kpi){
     const hint=document.getElementById('reportsHint');
     const snap = await db.ref(`dashboard_reports/${kpi}`).once('value');
@@ -966,13 +966,13 @@
     if(!reportsChart) initReportsChart();
     reportsChart.config.type='bar';
     reportsChart.data.labels = years.map(String);
-    reportsChart.data.datasets = [{ label:'% Completed (Anual)', data:pct, backgroundColor:years.map(()=> 'rgba(16,185,129,1)'), borderRadius:6, maxBarThickness:32 }];
+    reportsChart.data.datasets = [{ label:'% Completed (Annual)', data:pct, backgroundColor:years.map(()=> 'rgba(16,185,129,1)'), borderRadius:6, maxBarThickness:32 }];
     reportsChart.options.scales.y.min=0; reportsChart.options.scales.y.max=100;
     applyBarSaturationOverview(null); reportsChart.update();
 
     const tbody=document.getElementById('disciplineTBody');
-    if(tbody){ tbody.innerHTML=''; const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=4; td.textContent='Clique em um ano para ver disciplinas.'; tr.appendChild(td); tbody.appendChild(tr); }
-    if(hint) hint.textContent=`Overview por ano — KPI ${kpi}. Clique em um ano para ver disciplinas.`;
+    if(tbody){ tbody.innerHTML=''; const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=4; td.textContent='Click a year to see disciplines.'; tr.appendChild(td); tbody.appendChild(tr); }
+    if(hint) hint.textContent=`Overview by year — KPI ${kpi}. Click a year to see disciplines.`;
   }
 
   async function loadOverviewMonthsAllYears(kpi){
@@ -1004,8 +1004,8 @@
     reportsChart.update();
 
     const tbody=document.getElementById('disciplineTBody');
-    if(tbody){ tbody.innerHTML=''; const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=4; td.textContent='Clique em um ponto (ano/mês) para ver disciplinas do ano.'; tr.appendChild(td); tbody.appendChild(tr); }
-    if(hint) hint.textContent=`Overview por meses (todos os anos) — KPI ${kpi}.`;
+    if(tbody){ tbody.innerHTML=''; const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=4; td.textContent='Click a point (year/month) to see disciplines for that year.'; tr.appendChild(td); tbody.appendChild(tr); }
+    if(hint) hint.textContent=`Overview by months (all years) — KPI ${kpi}.`;
   }
 
   async function updateReportsChartForKPI(kpi){
@@ -1043,7 +1043,7 @@
     await renderYearDisciplinesFromFirebase(kpi, year);
   }
 
-  // Disciplinas snapshots
+  // Disciplines snapshots
   async function renderYearDisciplinesFromFirebase(kpi, year){
     const tbody=document.getElementById('disciplineTBody'); const hint=document.getElementById('discHint');
     if(!tbody) return;
@@ -1054,7 +1054,7 @@
       const yearTotal=Array.isArray(val.yearTotal)?val.yearTotal:[];
       if(yearTotal.length){
         renderDisciplineRows(yearTotal);
-        if(hint) hint.textContent=`KPI ${kpi} — Ano ${year}: disciplinas (snapshot anual)`;
+        if(hint) hint.textContent=`KPI ${kpi} — Year ${year}: disciplines (annual snapshot)`;
         return;
       }
     }
@@ -1065,7 +1065,7 @@
     const tbody=document.getElementById('disciplineTBody'); if(!tbody) return;
     tbody.innerHTML='';
     if(!rows || !rows.length){
-      const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=4; td.textContent='Sem dados.'; tr.appendChild(td); tbody.appendChild(tr); return;
+      const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=4; td.textContent='No data.'; tr.appendChild(td); tbody.appendChild(tr); return;
     }
     rows.forEach(r=>{
       const tr=document.createElement('tr');
@@ -1098,10 +1098,10 @@
     await renderYearDisciplinesFromFirebase(kpi, year);
   }
 
-  // APPLY/RESET/ADMIN — Rotina de update completa
+  // APPLY/RESET/ADMIN — Full update routine
   async function apply(){
     try{
-      if(!workbook){ notify('None spreadsheet has been uploaded yet.','warning','Update'); return; }
+      if(!workbook){ notify('No spreadsheet uploaded yet.','warning','Update'); return; }
 
       const activeBtn=document.querySelector('.report-controls .btn.active');
       const currentKPI = activeBtn ? activeBtn.dataset.kpi : 'OATS';
@@ -1151,7 +1151,7 @@
           updates[`${discNode}/perMonth`] = discYear.perMonth || Array(12).fill([]);
           updates[`${discNode}/yearTotal`]= discYear.yearTotal || [];
 
-          // live + events (mês corrente)
+          // live + events (current month)
           const now=new Date();
           if(year===now.getFullYear()){
             const m=now.getMonth();
@@ -1167,7 +1167,7 @@
       await db.ref().update(updates);
       notify('KPIs and Disciplines successfully applied to Firebase.','success','Update');
 
-      // Restaurar filtros/visão e recarregar gráficos
+      // Restore filters/view and reload charts
       await loadYearsFromFirebaseAndPopulateSelect();
       if(viewSel) viewSel.value = currentView;
       if(overviewModeSel) overviewModeSel.value = currentOverviewMode;
@@ -1177,16 +1177,16 @@
 
     }catch(err){
       console.error(err);
-      notify('Fail to upload the data. Check console for more details.','error','Update');
+      notify('Failed to upload the data. Check console for details.','error','Update');
     }
   }
-  async function resetAllData(){ notify('Rotina de reset não implementada.','warning','Reset'); }
+  async function resetAllData(){ notify('Reset routine not implemented.','warning','Reset'); }
   function checkPass(){
     const pwd = prompt('Admin Password:');
     if(pwd==='222324'){
       const panel=document.getElementById('update-panel');
       if(panel){ panel.style.display='block'; window.scrollTo({top:panel.offsetTop-20,behavior:'smooth'}); }
-      notify('Painel opened successfully.','success','Admin');
+      notify('Panel opened successfully.','success','Admin');
     }else{
       notify('Wrong Password.','error','Admin');
     }
@@ -1194,8 +1194,8 @@
 
   // Onload
   window.onload=async ()=>{
-    const meses=["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
-    const titleEl=document.getElementById('main-results-title'); if(titleEl) titleEl.textContent=`${meses[new Date().getMonth()]} RESULTS`;
+    const months=["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
+    const titleEl=document.getElementById('main-results-title'); if(titleEl) titleEl.textContent=`${months[new Date().getMonth()]} RESULTS`;
 
     // KPIs charts
     initChart('chart-oats','OATS','#2563eb');
@@ -1207,7 +1207,7 @@
     await loadYearsFromFirebaseAndPopulateSelect();
   };
 
-  // Botões KPI (Reports)
+  // KPI buttons (Reports)
   document.addEventListener('click', async (e)=>{
     const btn=e.target.closest('.report-controls .btn'); if(!btn) return;
     document.querySelectorAll('.report-controls .btn').forEach(b=>b.classList.remove('active'));
@@ -1229,7 +1229,7 @@
     if(activeBtn) await renderReportsByView(activeBtn.dataset.kpi);
   });
 
-  // Redirecionamento após refresh (mantido)
+  // Refresh redirect (kept)
   (function setupRefreshRedirect(){
     const REDIRECT_TIMEOUT_MS = 10 * 60 * 1000;
     try{
