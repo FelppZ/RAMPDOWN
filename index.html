@@ -9,193 +9,274 @@
     :root{
       --tech-black:#0b0f19;
       --accent:#2563eb;
-      --font-bold:'Bahnschrift SemiBold','Segoe UI',sans-serif;
-      --font-light:'Bahnschrift Light','Segoe UI',sans-serif;
+      --accent-2:#7c3aed;
+      --ok:#10b981;
+      --danger:#ef4444;
+      --text:#0b0f19;
+      --muted:#64748b;
+      --glass-bg: rgba(255,255,255,0.08);
+      --glass-border: rgba(255,255,255,0.18);
+      --font-bold:'Bahnschrift SemiBold','Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;
+      --font-light:'Bahnschrift Light','Segoe UI',system-ui,-apple-system,Roboto,Arial,sans-serif;
+      --shadow: 0 10px 30px rgba(0,0,0,.12);
     }
-    body, html {
-      height: 100%;
-      margin: 0;
-      font-family: var(--font-light);
-      background: #fcfcfc;
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family:var(--font-light); color:var(--text); background:#0b0f19;
+      background-attachment: fixed;
+      background-image: radial-gradient(1000px 500px at 10% 10%, #0b0f19 0%, #0b0f19 40%, #0c1226 100%);
     }
-    .login-container {
-      display: flex;
-      height: 100vh;
-      min-height: 100vh;
+
+    .login-container{ display:flex; min-height:100vh; isolation:isolate; }
+
+    /* Lado esquerdo: agora com conteúdo ancorado à lateral esquerda */
+    .login-left{
+      position:relative; flex:1; color:#fff; overflow:hidden;
+      display:flex; align-items:flex-start; justify-content:flex-start; /* ancora topo/esquerda */
+      padding:40px 28px;
+      background: linear-gradient(135deg, #0b0f19 10%, #0d1328 55%, #10183a 100%);
+      border-right: 1px solid rgba(255,255,255,0.12);
+      text-align:left; /* textos à esquerda */
     }
-    .login-left {
-      flex: 1;
-      background: var(--tech-black);
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      padding: 40px;
-      align-items: flex-start;
-      position: relative;
-      overflow: hidden;
+    /* Glow animado sutil */
+    .orb{
+      position:absolute; width:680px; height:680px; filter:blur(80px); opacity:.35; border-radius:50%;
+      background:radial-gradient(circle at 30% 30%, #2563eb 0%, transparent 55%);
+      top:-120px; left:-140px; animation:float1 9s ease-in-out infinite alternate; pointer-events:none;
     }
-    .login-logo {
-      height: 80px;
-      margin-bottom: 18px;
-      margin-left: 10px;
+    .orb2{
+      position:absolute; width:560px; height:560px; filter:blur(90px); opacity:.30; border-radius:50%;
+      background:radial-gradient(circle at 70% 70%, #7c3aed 0%, transparent 55%);
+      bottom:-160px; right:-120px; animation:float2 10s ease-in-out infinite alternate; pointer-events:none;
     }
-    .login-title {
-      font-family: var(--font-bold);
-      font-size: 2rem;
-      letter-spacing: 2px;
-      margin-bottom: 10px;
-      margin-left: 10px;
+    @keyframes float1{ from{transform:translateY(0)} to{transform:translateY(18px)} }
+    @keyframes float2{ from{transform:translateY(0)} to{transform:translateY(-16px)} }
+
+    /* Marca na lateral esquerda (controle fino por top/left) */
+    .login-brand{
+      position:absolute; z-index:2;
+      top: 12%;       /* distância do topo */
+      left: 4%;       /* distância da borda esquerda */
+      transform: none;
+      width: min(740px, 92%);
+      display:flex; flex-direction:column; gap:16px;
+      align-items: flex-start; /* esquerda */
+      text-align: left;        /* esquerda */
     }
-    .login-subtitle {
-      font-size: 1rem;
-      color: rgba(255,255,255,0.7);
-      margin-bottom: 35px;
-      letter-spacing: 1px;
-      margin-left: 10px;
+    .login-logo{
+      height:64px; object-fit:contain; opacity:.95;
+      filter: drop-shadow(0 6px 20px rgba(0,0,0,.25));
+      margin: 0; /* sem centralização */
     }
-    .login-right {
-      flex: 1;
-      background: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 40px;
+    .login-title{
+      font-family:var(--font-bold); font-size:2.2rem; letter-spacing:1.5px;
     }
-    .login-form {
-      background: #fff;
-      border-radius: 16px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-      padding: 40px 32px;
-      min-width: 320px;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      border: 1px solid #e5e7eb;
+    .login-subtitle{
+      font-size:1rem; color:rgba(255,255,255,.85); letter-spacing:.6px;
+      max-width: 560px;
     }
-    .login-form label {
-      font-family: var(--font-bold);
-      font-size: 1rem;
-      color: #0b0f19;
-      margin-bottom: 8px;
-    }
-    .login-form input[type="password"] {
-      padding: 12px;
-      border-radius: 8px;
-      border: 1px solid #e5e7eb;
-      font-size: 1rem;
-      margin-bottom: 18px;
-      background: #f8fafc;
-      color: #0b0f19;
-    }
-    .login-form button {
-      padding: 12px;
-      border-radius: 8px;
-      border: none;
-      background: var(--tech-black);
-      color: #fff;
-      font-family: var(--font-bold);
-      font-size: 1.1rem;
-      cursor: pointer;
-      transition: background .2s;
-      margin-bottom: 10px;
-    }
-    .login-form button:hover {
-      background: #111627;
-    }
-    .login-form .error {
-      color: #ef4444;
-      font-size: .95rem;
-      margin-bottom: 10px;
-      min-height: 18px;
-    }
+
     /* Ondas */
-    #waves-canvas {
-      position: absolute;
-      left: 0;
-      bottom: 0;
-      width: 100%;
-      height: 100px;
-      z-index: 1;
-      pointer-events: none;
-      opacity: 0.35;
+    #waves-canvas{ position:absolute; left:0; bottom:0; width:100%; height:120px; opacity:.45; pointer-events:none; z-index:1 }
+
+    /* Lado direito: branco */
+    .login-right{
+      flex:1; display:flex; align-items:center; justify-content:center; padding:48px;
+      background: #ffffff;
     }
-    .login-content {
-      position: relative;
-      z-index: 2;
-      width: 100%;
+
+    /* Card (glass por padrão) */
+    .login-form{
+      position:relative; width:100%; max-width:380px;
+      border-radius:20px; padding:28px;
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04));
+      border:1px solid rgba(0,0,0,.06);
+      box-shadow: var(--shadow), inset 0 0 0 1px rgba(255,255,255,.05);
+      color:#0b0f19; backdrop-filter: blur(10px);
     }
-    @media (max-width: 900px) {
-      .login-container { flex-direction: column; }
-      .login-left, .login-right { flex: unset; height: 50vh; }
-      .login-form { min-width: 0; width: 100%; }
-      #waves-canvas { height: 60px; }
+    .login-form h2{ margin:0 0 6px; font-family:var(--font-bold); font-size:1.4rem; letter-spacing:.5px; color:#0b0f19; }
+    .login-form .legend{ margin:0 0 18px; color:#475569; font-size:.92rem; }
+    .field{ display:flex; flex-direction:column; gap:8px; margin-bottom:14px; }
+    .label{ font-family:var(--font-bold); font-size:.95rem; color:#0b0f19 }
+    .control{ position:relative; }
+    .input{
+      width:100%; padding:12px 42px 12px 12px; font-size:1rem; color:#0b0f19;
+      border-radius:12px; border:1px solid #e5e7eb; background:#f8fafc;
+      outline:none; transition:.2s border, .2s background, .2s box-shadow;
+    }
+    .input::placeholder{ color:#94a3b8 }
+    .input:focus{ border-color:rgba(37,99,235,.65); box-shadow:0 0 0 3px rgba(37,99,235,.18); background:#fff; }
+    .toggle-eye{
+      position:absolute; right:10px; top:50%; transform:translateY(-50%);
+      width:34px; height:34px; border-radius:8px; display:flex; align-items:center; justify-content:center;
+      color:#475569; background:#ffffff; border:1px solid #e5e7eb;
+      cursor:pointer; transition:.2s background, .2s border, .2s color;
+    }
+    .toggle-eye:hover{ background:#f1f5f9; color:#0b0f19 }
+    .error{ min-height:18px; color:var(--danger); font-size:.92rem; margin:6px 0 4px }
+
+    .btn{
+      position:relative; display:inline-flex; align-items:center; justify-content:center; gap:10px;
+      width:100%; padding:12px; border:none; border-radius:12px;
+      background:linear-gradient(120deg,var(--accent),#3b82f6);
+      color:#fff; font-family:var(--font-bold); font-size:1.05rem; cursor:pointer;
+      transition:.2s transform, .2s box-shadow, .3s opacity; box-shadow:0 10px 30px rgba(37,99,235,.25);
+    }
+    .btn:hover{ transform:translateY(-1px); box-shadow:0 12px 36px rgba(37,99,235,.32) }
+    .btn:active{ transform:translateY(0) }
+    .btn[disabled]{ opacity:.6; cursor:not-allowed }
+
+    .spinner{
+      width:18px; height:18px; border-radius:50%;
+      border:2px solid rgba(255,255,255,.35); border-top-color:#fff;
+      animation:spin 1s linear infinite;
+    }
+    @keyframes spin{ to{ transform:rotate(360deg) } }
+
+    .footer-note{ margin-top:14px; color:#94a3b8; font-size:.85rem; text-align:center; }
+
+    /* Card SÓLIDO opcional (descomente para usar em vez do glass)
+    .login-form{
+      background:#ffffff; color:#0b0f19; border:1px solid #e5e7eb;
+      box-shadow:0 12px 36px rgba(0,0,0,.10); backdrop-filter:none;
+    }
+    */
+
+    /* Responsivo */
+    @media (max-width: 960px) {
+      .login-container{ flex-direction:column }
+      .login-left, .login-right{ padding:28px; }
+      .login-left{ min-height:46vh }
+      .login-right{ min-height:54vh }
+      #waves-canvas{ height:84px }
+      .login-brand{ left: 6%; top: 10%; }
+    }
+    @media (max-width: 420px) {
+      .login-form{ padding:22px }
+      .login-form h2{ font-size:1.25rem }
+      .login-brand{ left: 7%; top: 9%; }
     }
   </style>
 </head>
 <body>
-<div class="login-container">
-  <div class="login-left">
-    <div class="login-content">
-      <img class="login-logo" src="https://i0.wp.com/gcci.gy/wp-content/uploads/2025/01/logo-MODEC-1-Faneeza-Karim.png?ssl=1" alt="Logo MODEC">
-      <div class="login-title">RAMPDOWN DASHBOARD</div>
-      <div class="login-subtitle">Live KPI Monitoring System</div>
-    </div>
-    <canvas id="waves-canvas"></canvas>
-  </div>
-  <div class="login-right">
-    <form class="login-form" id="loginForm" autocomplete="off" onsubmit="return false;">
-      <label for="adminPass">Insert Password</label>
-      <input type="password" id="adminPass" placeholder="Password" required />
-      <div class="error" id="loginError"></div>
-      <button type="submit" onclick="checkLogin()">Login</button>
-    </form>
-  </div>
-</div>
-<script>
-  // Ondas animadas igual ao header
-  const canvas = document.getElementById('waves-canvas');
-  const ctx = canvas.getContext('2d');
-  function resizeWaves() {
-    canvas.width = canvas.offsetWidth;
-    canvas.height = canvas.offsetHeight;
-  }
-  window.addEventListener('resize', resizeWaves);
-  resizeWaves();
-  let count = 0;
-  function drawWaves() {
-    ctx.clearRect(0,0,canvas.width,canvas.height);
-    const centerY = canvas.height/2;
-    const color = 'rgba(36,80,255,1)';
-    const waves = [
-      { amplitude:Math.max(34,canvas.height*.09), frequency:.0046, phase:0, lineWidth:2.8 },
-      { amplitude:Math.max(28,canvas.height*.08), frequency:.0062, phase:Math.PI/2.6, lineWidth:2.6 },
-      { amplitude:Math.max(22,canvas.height*.07), frequency:.0042, phase:Math.PI/1.6, lineWidth:2.4 }
-    ];
-    for(const w of waves){
-      ctx.beginPath(); ctx.lineWidth=w.lineWidth; ctx.strokeStyle=color;
-      for(let x=0;x<canvas.width;x+=1){
-        const y=centerY+Math.sin(x*w.frequency+count+w.phase)*w.amplitude;
-        if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-      }
-      ctx.stroke();
-    }
-    count+=.01; requestAnimationFrame(drawWaves);
-  }
-  drawWaves();
+  <div class="login-container">
+    <!-- ESQUERDA (conteúdo ancorado à lateral esquerda) -->
+    <div class="login-left">
+      <div class="orb"></div>
+      <div class="orb2"></div>
 
-  function checkLogin() {
-    const pass = document.getElementById('adminPass').value;
-    const error = document.getElementById('loginError');
-    // Troque a senha abaixo para a senha real do admin
-    if(pass === 'modec@ramp') {
-      error.textContent = '';
-      // Redirecione para o dashboard
-      window.location.href = 'main.html'; // Troque para o caminho real do seu dashboard
-    } else {
-      error.textContent = 'Wrong password';
+      <div class="login-brand">
+        <img class="login-logo" src="https://i0.wp.com/gcci.gy/wp-content/uploads/2025/01/logo-MODEC-1-Faneeza-Karim.png?ssl=1" alt="Logo MODEC">
+        <div class="login-title">RAMPDOWN DASHBOARD</div>
+        <div class="login-subtitle">Live KPI Monitoring System</div>
+      </div>
+
+      <canvas id="waves-canvas"></canvas>
+    </div>
+
+    <!-- DIREITA (fundo branco) -->
+    <div class="login-right">
+      <form class="login-form" id="loginForm" autocomplete="off" novalidate>
+        <h2>Welcome!</h2>
+        <div class="legend">Use your admin password to access the dashboard.</div>
+
+        <div class="field">
+          <label for="adminPass" class="label">Password</label>
+          <div class="control">
+            <input type="password" id="adminPass" class="input" placeholder="Enter your password" required aria-describedby="loginError" />
+            <button type="button" class="toggle-eye" id="toggleEye" aria-label="Show/Hide password" title="Show/Hide password">
+              <svg id="eyeIcon" viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true">
+                <path d="M12 5c-7.633 0-11 7-11 7s3.367 7 11 7 11-7 11-7-3.367-7-11-7zm0 12c-2.761 0-5-2.239-5-5s2.239-5 5-5 5 2.239 5 5-2.239 5-5 5zm0-8a3 3 0 100 6 3 3 0 000-6z"/>
+              </svg>
+            </button>
+          </div>
+          <div class="error" id="loginError" role="alert" aria-live="polite"></div>
+        </div>
+
+        <button class="btn" id="loginBtn" type="submit">
+          <span>Login</span>
+        </button>
+
+        <div class="footer-note">Protected access • 2026</div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    // Ondas animadas
+    const canvas = document.getElementById('waves-canvas');
+    const ctx = canvas.getContext('2d');
+    function resizeWaves(){canvas.width=canvas.offsetWidth; canvas.height=canvas.offsetHeight;}
+    window.addEventListener('resize', resizeWaves); resizeWaves();
+    let count = 0;
+    function drawWaves() {
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      const centerY = canvas.height/2;
+      const color = 'rgba(36,80,255,1)';
+      const waves = [
+        { amplitude:Math.max(34,canvas.height*.09), frequency:.0046, phase:0, lineWidth:2.8 },
+        { amplitude:Math.max(28,canvas.height*.08), frequency:.0062, phase:Math.PI/2.6, lineWidth:2.6 },
+        { amplitude:Math.max(22,canvas.height*.07), frequency:.0042, phase:Math.PI/1.6, lineWidth:2.4 }
+      ];
+      for(const w of waves){
+        ctx.beginPath(); ctx.lineWidth=w.lineWidth; ctx.strokeStyle=color;
+        for(let x=0;x<canvas.width;x+=1){
+          const y=centerY+Math.sin(x*w.frequency+count+w.phase)*w.amplitude;
+          if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+        }
+        ctx.stroke();
+      }
+      count+=.01; requestAnimationFrame(drawWaves);
     }
-  }
-</script>
+    drawWaves();
+
+    // UI Interactions
+    const form = document.getElementById('loginForm');
+    const passInput = document.getElementById('adminPass');
+    const errorEl = document.getElementById('loginError');
+    const loginBtn = document.getElementById('loginBtn');
+    const eyeBtn = document.getElementById('toggleEye');
+    const eyeIcon = document.getElementById('eyeIcon');
+
+    eyeBtn.addEventListener('click', ()=>{
+      const isPwd = passInput.type === 'password';
+      passInput.type = isPwd ? 'text' : 'password';
+      eyeIcon.style.opacity = isPwd ? '1' : '.75';
+    });
+
+    form.addEventListener('submit', (e)=>{
+      e.preventDefault();
+      checkLogin();
+    });
+
+    function setLoading(loading){
+      if(loading){
+        loginBtn.setAttribute('disabled','disabled');
+        loginBtn.innerHTML = '<span class="spinner" aria-hidden="true"></span><span>Authenticating</span>';
+      }else{
+        loginBtn.removeAttribute('disabled');
+        loginBtn.innerHTML = '<span>Login</span>';
+      }
+    }
+
+    function checkLogin() {
+      const pass = passInput.value.trim();
+      errorEl.textContent = '';
+      if(!pass){
+        errorEl.textContent = 'Please enter your password.';
+        passInput.focus();
+        return;
+      }
+      const VALID = 'modec@ramp'; // ajuste sua senha real
+      if(pass === VALID) {
+        setLoading(true);
+        setTimeout(()=>{ window.location.href = 'main.html'; }, 700);
+      } else {
+        errorEl.textContent = 'Wrong password';
+        passInput.focus(); passInput.select();
+      }
+    }
+  </script>
 </body>
 </html>
