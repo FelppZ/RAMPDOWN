@@ -130,6 +130,37 @@
     }
     .show-menu-global.visible{display:flex}
     .show-menu-global:hover{background:#000}
+
+    /* NOTIFICATIONS */
+    .notify-container{
+      position:fixed; right:20px; bottom:20px; z-index:1200;
+      display:flex; flex-direction:column; gap:10px; max-width:360px;
+    }
+    .notify{
+      display:flex; align-items:flex-start; gap:10px;
+      padding:12px 14px; border-radius:10px; border:1px solid #e5e7eb; background:#fff;
+      box-shadow:0 10px 30px rgba(0,0,0,.08); color:#0b0f19; font-size:.92rem;
+      animation:slideIn .25s ease-out;
+    }
+    .notify.success{border-color:#10b98133}
+    .notify.error{border-color:#ef444433}
+    .notify.info{border-color:#2563eb33}
+    .notify.warning{border-color:#f59e0b33}
+    .notify .title{font-family:var(--font-bold); margin-bottom:2px; font-size:.95rem}
+    .notify .msg{color:#334155}
+    .notify .dot{
+      width:10px; height:10px; border-radius:50%; margin-top:4px;
+    }
+    .notify.success .dot{background:#10b981}
+    .notify.error .dot{background:#ef4444}
+    .notify.info .dot{background:#2563eb}
+    .notify.warning .dot{background:#f59e0b}
+    .notify .close{margin-left:auto; cursor:pointer; opacity:.6}
+    .notify .close:hover{opacity:1}
+    @keyframes slideIn{
+      from{transform:translateY(8px); opacity:0;}
+      to{transform:translateY(0); opacity:1;}
+    }
   </style>
 </head>
 <body>
@@ -164,7 +195,7 @@
       <span class="icon" aria-hidden="true">
         <!-- Material Symbols: settings -->
         <svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1a7.03 7.03 0 0 0-1.69-.98l-.38-2.65A.5.5 0 0 0 13 2h-4c-.24 0 -.44.17-.49.41l-.38 2.65c-.6.23-1.16.53-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46c-.12.22-.07.49.12.64l2.11 1.65c-.05.32-.08.65-.08.98s.03.66.08.98L1.48 14.6a.5.5 0 0 0-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.53.45 1.09.82 1.69 1.05l.38 2.65c.05.24.25.41.49.41h4c.24 0 .44-.17.49-.41l.38-2.65c.6-.23 1.16-.6 1.69-1.05l 2.49 1c.22 .08 .49 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.62zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/>
+          <path d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1a7.03 7.03 0 0 0-1.69-.98l-.38-2.65A.5.5 0 0 0 13 2h-4c-.24 0 -.44.17-.49.41l-.38 2.65c-.6.23-1.16.53-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46c-.12.22-.07.49.12.64l2.11 1.65c-.05.32-.08.65-.08.98s.03.66.08.98L1.48 14.6a.5.5 0 0 0-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.53.45 1.09.82 1.69 1.05l.38 2.65c.05.24.25.41.49.41h4c.24 0 .44-.17.49-.41l.38-2.65c.6-.23 1.16-.6 1.69-1.05l2.49 1c.22 .08 .49 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.62zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/>
         </svg>
       </span>
       <span class="label">Admin</span>
@@ -237,9 +268,9 @@
     </div>
 
     <div class="time-filter">
-      <label for="viewSelect">Visão:</label>
+      <label for="viewSelect">View:</label>
       <select id="viewSelect">
-        <option value="year">Por Ano</option>
+        <option value="year">By Year</option>
         <option value="overview">Overview (Anos)</option>
       </select>
 
@@ -313,6 +344,9 @@
 <!-- Botão global (mostrar menu) — só visível quando oculto -->
 <div class="show-menu-global" id="showMenuGlobal" title="Mostrar Menu">»</div>
 
+<!-- Notifications container -->
+<div class="notify-container" id="notifyContainer" aria-live="polite"></div>
+
 <script>
   // Firebase
   const firebaseConfig={apiKey:"AIzaSyDpowacZTDw8AiOQFK1SOY85x8LyNk1088",authDomain:"rampdown-data.firebaseapp.com",projectId:"rampdown-data",databaseURL:"https://rampdown-data-default-rtdb.firebaseio.com",storageBucket:"rampdown-data.firebasestorage.app",messagingSenderId:"971612677227",appId:"1:971612677227:web:74c155f0d5092b96913d2e"};
@@ -322,6 +356,24 @@
   const kpis=['OATS','SCE','CRIT1'];
   const chartInstances={};
   let workbook=null;
+
+  // Notifications
+  function notify(msg,type='info',title){
+    const container=document.getElementById('notifyContainer');
+    if(!container) return;
+    const el=document.createElement('div');
+    el.className=`notify ${type}`;
+    el.innerHTML=`<div class="dot"></div>
+      <div class="content">
+        ${title?`<div class="title">${title}</div>`:''}
+        <div class="msg">${msg}</div>
+      </div>
+      <div class="close" aria-label="Fechar" title="Fechar">✕</div>`;
+    const closer=el.querySelector('.close');
+    closer.addEventListener('click',()=>{ el.remove(); });
+    container.appendChild(el);
+    setTimeout(()=>{ el.remove(); }, 6000);
+  }
 
   // Sidebar toggle + botão global
   const sidebarEl=document.getElementById('sidebar');
@@ -370,6 +422,51 @@
     const mi=String(d.getMinutes()).padStart(2,'0');
     return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
   };
+
+  // CORREÇÃO MARÇO — Conversões robustas e normalização local
+  const EXCEL_1904_SYSTEM=false;
+  function excelSerialToDate(n){
+    // Ajuste de leap-bug do Excel e 1900/1904 systems
+    const base = EXCEL_1904_SYSTEM ? Date.UTC(1904,0,1) : Date.UTC(1899,11,30);
+    // Excel considera 1900-02-29; versões simplificadas ignoram +1 após 59,
+    // mas SheetJS já trata isso geralmente. Mantemos simples:
+    return new Date(base + Math.round(n*86400000));
+  }
+  function normalizeLocalDate(d){
+    // Zera hora local para evitar rollovers de fuso que deslocavam MARÇO
+    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0,0,0,0);
+  }
+  function parseDateAny(v){
+    // Date ou serial number
+    if(v instanceof Date && !isNaN(v)) return normalizeLocalDate(v);
+    if(typeof v==='number' && isFinite(v)){
+      const dt = excelSerialToDate(v);
+      return normalizeLocalDate(new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()));
+    }
+    const s = (v==null?'':String(v)).replace(/\u00A0/g,' ').trim();
+    if(!s) return null;
+
+    // ISO-like YYYY-MM-DD
+    let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);
+    if(m){
+      const y=+m[1], mo=+m[2]-1, da=+m[3];
+      const dt = new Date(y, mo, da);
+      if(!isNaN(dt)) return normalizeLocalDate(dt);
+    }
+
+    // BR DD/MM/YYYY ou DD-MM-YYYY
+    m = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/.exec(s);
+    if(m){
+      const da=+m[1], mo=+m[2]-1, y=(+m[3]<100 ? 2000+(+m[3]) : +m[3]);
+      const dt = new Date(y, mo, da);
+      if(!isNaN(dt)) return normalizeLocalDate(dt);
+    }
+
+    // Fallback: Date nativa (pode ter timezone). Normaliza.
+    const nat = new Date(s);
+    if(!isNaN(nat)) return normalizeLocalDate(new Date(nat.getFullYear(), nat.getMonth(), nat.getDate()));
+    return null;
+  }
 
   // KPI Charts — registram mudanças do Firebase
   function initChart(id,label,color){
@@ -451,7 +548,7 @@
         merged.sort((a,b)=>Number(a.ts||0)-Number(b.ts||0));
         const lastDaysSet=new Set(getLastDaysKeys(DAYS_BACK));
         const filtered=merged.filter(e=>{
-          const d=new Date(e.ts||0);
+          const d=normalizeLocalDate(new Date(e.ts||0));
           const key=toYMD(d);
           return lastDaysSet.has(key);
         });
@@ -467,28 +564,22 @@
   // IW39 índices
   const IDX_A=0, IDX_D=8, IDX_J=14, IDX_L=15, IDX_M=12;
 
-  // Upload IW39
+  // Upload IW39 (notificação)
   document.getElementById('file-input')?.addEventListener('change', async (ev)=>{
-    const file=ev.target.files?.[0]; if(!file) return;
-    const buf=await file.arrayBuffer();
-    workbook=XLSX.read(buf,{type:'array'});
-    alert('IW39 carregada. Você pode revisar e clicar em Aplicar ao Dashboard.');
-    refreshYearsFromWorkbook();
+    const file=ev.target.files?.[0]; if(!file){ notify('Nenhum arquivo selecionado.','warning','Upload'); return; }
+    try{
+      const buf=await file.arrayBuffer();
+      workbook=XLSX.read(buf,{type:'array'});
+      notify('IW39 Table loaded successfully, click update to implement at dashboad .','info','Upload completed');
+      refreshYearsFromWorkbook();
+    }catch(e){
+      console.error(e);
+      notify('Falha ao ler o arquivo. Verifique o formato.','error','Upload');
+    }
   });
 
   // Data utils
   function normWS(s){return (s==null?'':String(s)).replace(/\u00A0/g,' ').trim();}
-  const EXCEL_1904_SYSTEM=false;
-  function fromExcelSerial(n){const base=EXCEL_1904_SYSTEM?new Date(Date.UTC(1904,0,1)):new Date(Date.UTC(1899,11,30));return new Date(base.getTime()+Math.round(n*86400000));}
-  function parseDateAny(v){
-    if(v instanceof Date && !isNaN(v)) return v;
-    if(typeof v==='number' && isFinite(v)){const dt=fromExcelSerial(v);return new Date(dt.getFullYear(),dt.getMonth(),dt.getDate());}
-    const s=normWS(v); if(!s) return null;
-    let m=/^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s); if(m){const dt=new Date(+m[1],+m[2]-1,+m[3]); if(!isNaN(dt)) return dt;}
-    m=/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/.exec(s); if(m){const y=+m[3]<100?2000+(+m[3]):+m[3]; const dt=new Date(y,+m[2]-1,+m[1]); if(!isNaN(dt)) return dt;}
-    const nat=new Date(s); if(!isNaN(nat)) return new Date(nat.getFullYear(),nat.getMonth(),nat.getDate());
-    return null;
-  }
   const norm=(s)=>(s==null?'':String(s)).toUpperCase().replace(/\u00A0/g,' ').replace(/[–—−]/g,'-').replace(/\s+/g,' ').trim();
   const SEP=String.raw`[\s,;:\/|()[\]{}<>=\\"'.-]`;
   function matchOATS(v){const f=norm(v); return new RegExp(`(^|${SEP})OATS(${SEP}|$)`).test(f);}
@@ -514,7 +605,7 @@
   }
   function sameMonthYear(d,m,y){ return d && d.getMonth()===m && d.getFullYear()===y; }
 
-  // Sumariza a planilha inteira por KPI, ano e mês
+  // Sumariza por KPI/Ano/Mês (geral)
   function summarizeWorkbookByYearMonth(wb){
     const sheet=wb.SheetNames[0]; const ws=wb.Sheets[sheet];
     const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
@@ -522,7 +613,6 @@
     const begin=parseDateAny(rows[0]?.[IDX_L])?0:1;
 
     const result={ OATS:{}, SCE:{}, CRIT1:{} };
-
     const ensureYear = (kpi, year)=>{
       if(!result[kpi][year]) result[kpi][year]={ totals:Array(12).fill(0), dones:Array(12).fill(0) };
       return result[kpi][year];
@@ -530,7 +620,7 @@
 
     for(let i=begin;i<rows.length;i++){
       const r=rows[i]; if(!r) continue;
-      const dt=parseDateAny(r[IDX_L]); if(!dt) continue;
+      const dt=parseDateAny(r[IDX_L]); if(!dt) continue; // dt já normalizado
       const year=dt.getFullYear(); const month=dt.getMonth();
 
       const desc = r[IDX_D];
@@ -549,6 +639,79 @@
       }
     }
     return result;
+  }
+
+  // Sumariza por KPI/Ano/Mês/Disciplina (coluna M)
+  function summarizeWorkbookByDiscipline(wb){
+    const sheet=wb.SheetNames[0]; const ws=wb.Sheets[sheet];
+    const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
+    if(!rows.length) throw new Error('Aba vazia/incorreta');
+    const begin=parseDateAny(rows[0]?.[IDX_L])?0:1;
+
+    const map = { OATS:{}, SCE:{}, CRIT1:{} };
+    const ensureMonth = (kpi, year, month)=>{
+      if(!map[kpi][year]) map[kpi][year]={};
+      if(!map[kpi][year][month]) map[kpi][year][month]={};
+      return map[kpi][year][month];
+    };
+
+    for(let i=begin;i<rows.length;i++){
+      const r=rows[i]; if(!r) continue;
+      const dt=parseDateAny(r[IDX_L]); if(!dt) continue;
+      const year=dt.getFullYear(); const month=dt.getMonth();
+
+      const desc = r[IDX_D];
+      const status = r[IDX_J];
+      const rawDisc = r[IDX_M];
+      const discipline = (rawDisc==null?'UNKNOWN':String(rawDisc)).trim() || 'UNKNOWN';
+
+      let kpi=null;
+      if(matchOATS(desc)){
+        if (shouldIgnoreOATSRow(desc, status, dt)) continue;
+        kpi='OATS';
+      } else if(matchGENR0(desc)){
+        kpi='SCE';
+      } else if(matchGENR1(desc)){
+        kpi='CRIT1';
+      }
+      if(!kpi) continue;
+
+      const monthMap=ensureMonth(kpi,year,month);
+      if(!monthMap[discipline]) monthMap[discipline]={total:0, done:0};
+      monthMap[discipline].total += 1;
+      if(isTECO(status)) monthMap[discipline].done += 1;
+    }
+
+    const out={ OATS:{}, SCE:{}, CRIT1:{} };
+    for(const kpi of Object.keys(map)){
+      for(const yearStr of Object.keys(map[kpi])){
+        const year = Number(yearStr);
+        const perMonth = Array(12).fill(null).map(()=>[]);
+        const yearAgg = {};
+        for(let m=0;m<12;m++){
+          const byDisc = map[kpi][year]?.[m] || {};
+          const entries = Object.entries(byDisc).map(([name, obj])=>{
+            const total=Number(obj.total||0);
+            const done=Number(obj.done||0);
+            const pct = total>0 ? Math.floor((done/total)*100) : 0;
+            if(!yearAgg[name]) yearAgg[name]={total:0,done:0};
+            yearAgg[name].total += total;
+            yearAgg[name].done  += done;
+            return { name, total, done, pct };
+          }).sort((a,b)=>b.total-a.total);
+          perMonth[m]=entries;
+        }
+        const yearTotal = Object.entries(yearAgg).map(([name, obj])=>{
+          const total=Number(obj.total||0);
+          const done=Number(obj.done||0);
+          const pct = total>0 ? Math.floor((done/total)*100) : 0;
+          return { name, total, done, pct };
+        }).sort((a,b)=>b.total-a.total);
+
+        out[kpi][year] = { labels:['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'], perMonth, yearTotal };
+      }
+    }
+    return out;
   }
 
   // Reports: anos
@@ -725,7 +888,7 @@
     }
   }
 
-  // Render lógico conforme visão
+  // Render lógico conforme visão (mantido)
   async function renderReportsByView(kpi){
     const viewSel=document.getElementById('viewSelect');
     const view = viewSel ? viewSel.value : 'year';
@@ -760,7 +923,7 @@
     }
   }
 
-  // Overview multi-anos: barras por ano
+  // Overview multi-anos (mantido)
   async function loadOverviewAllYears(kpi){
     const hint=document.getElementById('reportsHint');
     const snap = await db.ref(`dashboard_reports/${kpi}`).once('value');
@@ -805,7 +968,6 @@
     if(hint) hint.textContent=`Overview por ano — KPI ${kpi}. Clique em um ano para ver disciplinas.`;
   }
 
-  // Overview: TODAS as séries de meses por ano
   async function loadOverviewMonthsAllYears(kpi){
     const hint=document.getElementById('reportsHint');
     const snap = await db.ref(`dashboard_reports/${kpi}`).once('value');
@@ -958,9 +1120,9 @@
   // APPLY/RESET/ADMIN
   async function apply(){
     try{
-      if(!workbook){ alert('Nenhuma planilha carregada. Faça upload da IW39 antes de aplicar.'); return; }
+      if(!workbook){ notify('None spreadsheet has been uploaded yet.','warning','Update'); return; }
 
-      // Guarda filtros atuais (KPI ativo e visão)
+      // Guarda filtros atuais
       const activeBtn=document.querySelector('.report-controls .btn.active');
       const currentKPI = activeBtn ? activeBtn.dataset.kpi : 'OATS';
       const viewSel=document.getElementById('viewSelect');
@@ -970,17 +1132,20 @@
       const currentOverviewMode = overviewModeSel ? overviewModeSel.value : 'years';
       const currentYear = yearSel && yearSel.value ? Number(yearSel.value) : null;
 
-      // 1) Sumariza toda a planilha por KPI/Ano/Mês
+      notify('Reading spreadsheet...','info','Update');
       const summary = summarizeWorkbookByYearMonth(workbook);
+      notify('Processing data from firebase...','info','Update');
+      const discSummary = summarizeWorkbookByDiscipline(workbook);
       const ts = Date.now();
 
-      // 2) Monta updates: merge com anos existentes e atualiza arrays
       const updates={};
       const LABELS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 
       for(const kpi of ['OATS','SCE','CRIT1']){
         const years = Object.keys(summary[kpi]).map(Number);
+
         for(const year of years){
+          // dashboard_reports
           const nodePath=`dashboard_reports/${kpi}/${year}`;
           const snap = await db.ref(nodePath).once('value');
           const existing = snap.exists()? (snap.val()||{}) : {};
@@ -1000,7 +1165,14 @@
           updates[`${nodePath}/dones`]  = dones;
           updates[`${nodePath}/pct`]    = pct;
 
-          // Atualiza snapshot live para mês/ano atuais
+          // dashboard_disciplines
+          const discNode=`dashboard_disciplines/${kpi}/${year}`;
+          const discYear = discSummary[kpi][year] || { labels: LABELS, perMonth:Array(12).fill([]), yearTotal:[] };
+          updates[`${discNode}/labels`]   = discYear.labels || LABELS;
+          updates[`${discNode}/perMonth`] = discYear.perMonth || Array(12).fill([]);
+          updates[`${discNode}/yearTotal`]= discYear.yearTotal || [];
+
+          // Atualiza snapshot live e registra evento para mês/ano correntes
           const now=new Date();
           if(year===now.getFullYear()){
             const m=now.getMonth();
@@ -1015,7 +1187,7 @@
 
       await db.ref().update(updates);
 
-      alert('Planilha aplicada: KPIs sumarizados por mês/ano no Firebase. Gráficos serão atualizados.');
+      notify('KPIs and Disciplines successfully applied to Firebase..','success','Update');
 
       await loadYearsFromFirebaseAndPopulateSelect();
 
@@ -1031,15 +1203,21 @@
 
     }catch(err){
       console.error(err);
-      alert('Falha ao aplicar dados ao Firebase. Verifique o console para detalhes.');
+      notify('Fail to upload the data. Check console for more details.','error','Update');
     }
   }
 
-  async function resetAllData(){ alert('Ajuste sua rotina de RESET aqui (mantida do projeto).'); }
+  async function resetAllData(){
+    notify('Rotina de reset não implementada.','warning','Reset');
+  }
   function checkPass(){
-    if(prompt('Senha:')==='222324'){
+    const pwd = prompt('Senha:');
+    if(pwd==='222324'){
       const panel=document.getElementById('update-panel');
       if(panel){ panel.style.display='block'; window.scrollTo({top:panel.offsetTop-20,behavior:'smooth'}); }
+      notify('Painel opened successfully.','success','Admin');
+    }else{
+      notify('Wrong Password.','error','Admin');
     }
   }
 
@@ -1106,32 +1284,21 @@
     if(activeBtn) await renderReportsByView(activeBtn.dataset.kpi);
   });
 
-  // ============================================================
-  // REDIRECIONAMENTO APÓS REFRESH/F5 DEPOIS DE UM TEMPO DEFINIDO
-  // ============================================================
+  // Redirecionamento após refresh (mantido)
   (function setupRefreshRedirect(){
-    // Ajuste aqui o tempo limite (ex.: 10 minutos)
-    const REDIRECT_TIMEOUT_MS = 1 * 60 * 1000; // 10 minutos
-
+    const REDIRECT_TIMEOUT_MS = 10 * 60 * 1000;
     try{
       const STORAGE_KEY = 'lastVisitTs';
       const now = Date.now();
       const last = Number(localStorage.getItem(STORAGE_KEY) || 0);
       localStorage.setItem(STORAGE_KEY, String(now));
-
-      // Heurística simples para detectar F5/refresh:
-      // Se houve visita anterior (last>0) e o delta de tempo for MAIOR que o timeout,
-      // significa que o usuário retornou após o tempo limite — redireciona para index.html
       if(last > 0 && (now - last) > REDIRECT_TIMEOUT_MS){
-        // Evita loop se a própria página já for index.html
         const isIndex = /\/index\.html?$/.test(location.pathname) || location.pathname === '/' || location.pathname === '';
         if(!isIndex){
-          // Redireciona preservando a origem se necessário (pode ajustar para apenas 'index.html')
           location.replace('index.html');
         }
       }
     }catch(e){
-      // Falha silenciosa se localStorage desabilitado
       console.warn('Refresh redirect storage unavailable:', e);
     }
   })();
