@@ -94,7 +94,7 @@
     .time-filter label{font-size:12px;color:#334155}
     .time-filter select{padding:8px;border:1px solid #111;border-radius:6px;background:#fff;color:#111;cursor:pointer}
     .reports-chart-wrap{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px}
-    .reports-chart{height:260px}
+    .reports-chart{height:300px}
 
     /* Disciplinas */
     .discipline-wrap{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin-top:16px}
@@ -164,7 +164,7 @@
       <span class="icon" aria-hidden="true">
         <!-- Material Symbols: settings -->
         <svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1a7.03 7.03 0 0 0-1.69-.98l-.38-2.65A.5.5 0 0 0 13 2h-4c-.24 0-.44.17-.49.41l-.38 2.65c-.6.23-1.16.53-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46c-.12.22-.07.49.12.64l2.11 1.65c-.05.32-.08.65-.08.98s.03.66.08.98L1.48 14.6a.5.5 0 0 0-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.53.45 1.09.82 1.69 1.05l.38 2.65c.05.24.25.41.49.41h4c.24 0 .44-.17.49-.41l.38-2.65c.6-.23 1.16-.6 1.69-1.05l2.49 1c.22.08.49 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.62zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/>
+          <path d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1a7.03 7.03 0 0 0-1.69-.98l-.38-2.65A.5.5 0 0 0 13 2h-4c-.24 0 -.44.17-.49.41l-.38 2.65c-.6.23-1.16.53-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46c-.12.22-.07.49.12.64l2.11 1.65c-.05.32-.08.65-.08.98s.03.66.08.98L1.48 14.6a.5.5 0 0 0-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.53.45 1.09.82 1.69 1.05l.38 2.65c.05.24.25.41.49.41h4c.24 0 .44-.17.49-.41l.38-2.65c.6-.23 1.16-.6 1.69-1.05l 2.49 1c.22 .08 .49 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.62zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/>
         </svg>
       </span>
       <span class="label">Admin</span>
@@ -237,14 +237,26 @@
     </div>
 
     <div class="time-filter">
-      <label for="yearSelect">Year:</label>
+      <label for="viewSelect">Visão:</label>
+      <select id="viewSelect">
+        <option value="year">Por Ano</option>
+        <option value="overview">Overview (Anos)</option>
+      </select>
+
+      <label for="overviewMode" id="overviewModeLabel" style="display:none;">Detalhe:</label>
+      <select id="overviewMode" style="display:none;">
+        <option value="years">Resumo Anual</option>
+        <option value="months">Meses (todos os anos)</option>
+      </select>
+
+      <label for="yearSelect" id="yearLabel">Year:</label>
       <select id="yearSelect"></select>
     </div>
 
     <div class="reports-chart-wrap">
       <canvas id="reportsChart" class="reports-chart"></canvas>
     </div>
-    <p class="value-text" id="reportsHint">Selecione o KPI e o ano. Clique em um mês para filtrar a tabela por disciplina. Clique novamente para limpar o filtro.</p>
+    <p class="value-text" id="reportsHint">Selecione o KPI e a visão. Clique em um mês/ano para ver disciplinas.</p>
 
     <div class="discipline-wrap">
       <div class="discipline-header">
@@ -311,7 +323,7 @@
   const chartInstances={};
   let workbook=null;
 
-  // Sidebar toggle + botão global (aparece só quando oculto)
+  // Sidebar toggle + botão global
   const sidebarEl=document.getElementById('sidebar');
   const showMenuGlobalBtn=document.getElementById('showMenuGlobal');
   const toggleSidebarBtn=document.getElementById('toggleSidebar');
@@ -359,7 +371,7 @@
     return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
   };
 
-  // KPI Charts (EXATO como está — apenas alteramos o callback do tooltip para exibir "% — executed / total" quando possível)
+  // KPI Charts — registram mudanças do Firebase
   function initChart(id,label,color){
     const el=document.getElementById(id); if(!el) return;
     const ctx=el.getContext('2d');
@@ -372,7 +384,6 @@
       options:{responsive:true,maintainAspectRatio:false,
         plugins:{
           legend:{display:false},
-          // Ajuste solicitado: tooltip igual ao do Reports
           tooltip:{callbacks:{
             label:(ctx)=>{
               const pct = typeof ctx.parsed === 'number' ? Number(ctx.parsed) : Number(ctx.parsed?.y ?? 0);
@@ -403,7 +414,7 @@
     else { sd.className='offline'; st.textContent='STATUS: CONNECTING'; }
   });
 
-  // KPIs live
+  // KPIs live (cards)
   db.ref('dashboard_live').on('value', (snapshot)=>{
     const data=snapshot.val(); if(!data) return;
     for(const id of kpis){
@@ -420,19 +431,36 @@
     }
   });
 
-  // KPI mini-series (opcional)
+  // KPI mini-séries últimas 2 janelas de mês para cobrir 7 dias
   const DAYS_BACK=7;
   function getLastDaysKeys(n){const out=[];const now=new Date();for(let i=n-1;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i);out.push(toYMD(d));}return out;}
-  kpis.forEach(id=>{
-    const cId=`chart-${id.toLowerCase()}`;
-    db.ref(`dashboard_events/${id}`).on('value',snap=>{
+  kpis.forEach(kpi=>{
+    const cId=`chart-${kpi.toLowerCase()}`;
+    const now=new Date();
+    const ymKey=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+    db.ref(`dashboard_events/${kpi}/${ymKey}`).on('value',snap=>{
       const chart=chartInstances[cId]; if(!chart) return;
-      const allDays=snap.val()||{}; const wanted=new Set(getLastDaysKeys(DAYS_BACK)); const merged=[];
-      Object.entries(allDays).forEach(([day,events])=>{if(!wanted.has(day)) return; merged.push(...Object.values(events||{}));});
-      merged.sort((a,b)=>Number(a.ts||0)-Number(b.ts||0));
-      const labels=merged.map(e=>fmtLabel(e.ts||Date.now()));
-      const data=merged.map(e=>Number(e.pct||0));
-      chart.data.labels=labels; chart.data.datasets[0].data=data; chart.data.datasets[1].data=Array(labels.length).fill(100); chart.update();
+      const events=snap.val()||{};
+      const merged=[];
+      Object.values(events).forEach(e=>merged.push(e));
+      const prev=new Date(now.getFullYear(),now.getMonth()-1,1);
+      const prevYm=`${prev.getFullYear()}-${String(prev.getMonth()+1).padStart(2,'0')}`;
+      db.ref(`dashboard_events/${kpi}/${prevYm}`).once('value').then(prevSnap=>{
+        const prevEv=prevSnap.val()||{};
+        Object.values(prevEv).forEach(e=>merged.push(e));
+        merged.sort((a,b)=>Number(a.ts||0)-Number(b.ts||0));
+        const lastDaysSet=new Set(getLastDaysKeys(DAYS_BACK));
+        const filtered=merged.filter(e=>{
+          const d=new Date(e.ts||0);
+          const key=toYMD(d);
+          return lastDaysSet.has(key);
+        });
+        const labels=filtered.map(e=>fmtLabel(e.ts||Date.now()));
+        chart.data.labels=labels;
+        chart.data.datasets[0].data=filtered.map(e=>({x:fmtLabel(e.ts||Date.now()), y:Number(e.pct||0), cur:e.cur, max:e.max}));
+        chart.data.datasets[1].data=Array(labels.length).fill(100);
+        chart.update();
+      });
     });
   });
 
@@ -444,11 +472,8 @@
     const file=ev.target.files?.[0]; if(!file) return;
     const buf=await file.arrayBuffer();
     workbook=XLSX.read(buf,{type:'array'});
-    alert('IW39 carregada. Vá para Reports e escolha o KPI/ano, ou clique Aplicar para atualizar KPIs do mês atual.');
+    alert('IW39 carregada. Você pode revisar e clicar em Aplicar ao Dashboard.');
     refreshYearsFromWorkbook();
-    const activeBtn=document.querySelector('.report-controls .btn.active');
-    const sel=document.getElementById('yearSelect');
-    if (activeBtn && sel && sel.value) updateReportsChartForKPI(activeBtn.dataset.kpi);
   });
 
   // Data utils
@@ -489,35 +514,41 @@
   }
   function sameMonthYear(d,m,y){ return d && d.getMonth()===m && d.getFullYear()===y; }
 
-  function computeFromWorkbook(wb){
-    oatsIgnoredCount = 0;
-    const { month, year } = monthRangeCurrent();
+  // Sumariza a planilha inteira por KPI, ano e mês
+  function summarizeWorkbookByYearMonth(wb){
     const sheet=wb.SheetNames[0]; const ws=wb.Sheets[sheet];
     const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
     if(!rows.length) throw new Error('Aba vazia/incorreta');
-
     const begin=parseDateAny(rows[0]?.[IDX_L])?0:1;
-    const counters={OATS:{done:0,total:0},SCE:{done:0,total:0},CRIT1:{done:0,total:0}};
+
+    const result={ OATS:{}, SCE:{}, CRIT1:{} };
+
+    const ensureYear = (kpi, year)=>{
+      if(!result[kpi][year]) result[kpi][year]={ totals:Array(12).fill(0), dones:Array(12).fill(0) };
+      return result[kpi][year];
+    };
 
     for(let i=begin;i<rows.length;i++){
       const r=rows[i]; if(!r) continue;
       const dt=parseDateAny(r[IDX_L]); if(!dt) continue;
-      const d0=new Date(dt.getFullYear(),dt.getMonth(),dt.getDate(),0,0,0,0);
-      if(!sameMonthYear(d0,month,year)) continue;
+      const year=dt.getFullYear(); const month=dt.getMonth();
 
       const desc = r[IDX_D];
       const status = r[IDX_J];
 
       if(matchOATS(desc)){
         if (shouldIgnoreOATSRow(desc, status, dt)) continue;
-        counters.OATS.total++; if(isTECO(status)) counters.OATS.done++;
+        const y=ensureYear('OATS',year);
+        y.totals[month]++; if(isTECO(status)) y.dones[month]++;
       } else if(matchGENR0(desc)){
-        counters.SCE.total++; if(isTECO(status)) counters.SCE.done++;
+        const y=ensureYear('SCE',year);
+        y.totals[month]++; if(isTECO(status)) y.dones[month]++;
       } else if (matchGENR1(desc)) {
-        counters.CRIT1.total++; if(isTECO(status)) counters.CRIT1.done++;
+        const y=ensureYear('CRIT1',year);
+        y.totals[month]++; if(isTECO(status)) y.dones[month]++;
       }
     }
-    return counters;
+    return result;
   }
 
   // Reports: anos
@@ -556,7 +587,6 @@
       });
     }
     const years=[...yearsSet].sort((a,b)=>a-b);
-    // Seleciona o ano atual se disponível; senão, o último
     const currentYear=new Date().getFullYear();
     if(!years.length){
       const opt=document.createElement('option'); opt.value=''; opt.textContent='Sem anos'; sel.appendChild(opt);
@@ -566,12 +596,31 @@
     sel.value = years.includes(currentYear) ? String(currentYear) : String(years[years.length-1]);
 
     const activeBtn=document.querySelector('.report-controls .btn.active');
-    if (activeBtn) await updateReportsChartForKPI(activeBtn.dataset.kpi);
+    if (activeBtn) await renderReportsByView(activeBtn.dataset.kpi);
   }
 
-  // Reports chart + estado de filtro
+  // Reports chart + estado
   let reportsChart=null;
-  const reportsState={kpi:'OATS',year:null,labels:[],pct:[],totals:[],dones:[], selectedIndex:null};
+  const reportsState={
+    kpi:'OATS',
+    view:'year', // 'year' | 'overview'
+    overviewMode:'years', // 'years' | 'months'
+    year:null,
+    labels:[],
+    pct:[],
+    totals:[],
+    dones:[],
+    selectedIndex:null,
+    // Overview (anos)
+    years:[],
+    yearsPct:[],
+    yearsTotals:[],
+    yearsDones:[],
+    // Overview (meses de todos os anos)
+    monthsLabels:['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'],
+    seriesByYear:{} // { [year]: {pct:[12], totals:[12], dones:[12], color:string} }
+  };
+
   function initReportsChart(){
     const el=document.getElementById('reportsChart'); if(!el) return;
     reportsChart=new Chart(el.getContext('2d'),{
@@ -585,41 +634,226 @@
           legend:{display:true},
           tooltip:{callbacks:{
             label:(ctx)=>{
-              const pct=ctx.parsed.y ?? 0;
-              const i=ctx.dataIndex;
-              const exec=reportsState.dones?.[i];
-              const tot=reportsState.totals?.[i];
-              if(typeof exec==='number' && typeof tot==='number') return `${pct}% — ${exec} / ${tot}`;
-              return `${pct}%`;
+              if(reportsState.view==='overview' && reportsState.overviewMode==='months'){
+                const ds = reportsChart.data.datasets[ctx.datasetIndex];
+                const pct = Math.round((ctx.parsed.y??0));
+                const year = ds?.year;
+                const monthIdx = ctx.dataIndex;
+                const done = ds?.dones?.[monthIdx] ?? null;
+                const total = ds?.totals?.[monthIdx] ?? null;
+                if(total!=null && total>0 && done!=null) return `${year} ${reportsState.monthsLabels[monthIdx]} — ${pct}% — ${done}/${total}`;
+                return `${year} ${reportsState.monthsLabels[monthIdx]} — ${pct}%`;
+              }else if(reportsState.view==='overview'){
+                const pct=ctx.parsed.y ?? 0;
+                const i=ctx.dataIndex;
+                const exec=reportsState.yearsDones?.[i];
+                const tot=reportsState.yearsTotals?.[i];
+                if(typeof exec==='number' && typeof tot==='number') return `${pct}% — ${exec} / ${tot}`;
+                return `${pct}%`;
+              }else{
+                const pct=ctx.parsed.y ?? 0;
+                const i=ctx.dataIndex;
+                const exec=reportsState.dones?.[i];
+                const tot=reportsState.totals?.[i];
+                if(typeof exec==='number' && typeof tot==='number') return `${pct}% — ${exec} / ${tot}`;
+                return `${pct}%`;
+              }
             }
           }}
         },
         scales:{x:{grid:{display:false}},y:{min:0,max:100,ticks:{stepSize:20},grid:{color:'#eee'}}},
         onClick: async (evt, elements) => {
+          if(reportsState.view==='overview' && reportsState.overviewMode==='months'){
+            const points = reportsChart.getElementsAtEventForMode(evt, 'nearest', {intersect:true}, true);
+            if(!points || !points.length) return;
+            const p = points[0];
+            const ds = reportsChart.data.datasets[p.datasetIndex];
+            const year = ds?.year;
+            if(year!=null){
+              await renderYearDisciplinesFromFirebase(reportsState.kpi, year);
+              const hint=document.getElementById('discHint');
+              if(hint) hint.textContent=`KPI ${reportsState.kpi} — ${year} ${reportsState.monthsLabels[p.index]}: disciplinas (snapshot anual do ano)`;
+            }
+            return;
+          }
+
           if (!elements || !elements.length) return;
           const index = elements[0].index;
-          if (reportsState.selectedIndex === index) {
-            reportsState.selectedIndex = null;
-            await renderYearDisciplinesFromFirebase(reportsState.kpi, reportsState.year);
-            applyBarSaturation(null);
-          } else {
-            reportsState.selectedIndex = index;
-            await filterDisciplinesByMonthIndex(index);
-            applyBarSaturation(index);
+          if(reportsState.view==='overview'){
+            const year = reportsState.years[index];
+            reportsState.selectedIndex = reportsState.selectedIndex === index ? null : index;
+            applyBarSaturationOverview(reportsState.selectedIndex);
+            if(year!=null){
+              await renderYearDisciplinesFromFirebase(reportsState.kpi, year);
+              const hint=document.getElementById('discHint');
+              if(hint) hint.textContent=`KPI ${reportsState.kpi} — Ano ${year}: disciplinas (snapshot anual)`;
+            }
+            reportsChart.update();
+          }else{
+            if (reportsState.selectedIndex === index) {
+              reportsState.selectedIndex = null;
+              await renderYearDisciplinesFromFirebase(reportsState.kpi, reportsState.year);
+              applyBarSaturation(null);
+            } else {
+              reportsState.selectedIndex = index;
+              await filterDisciplinesByMonthIndex(index);
+              applyBarSaturation(index);
+            }
+            reportsChart.update();
           }
-          reportsChart.update();
         }
       }
     });
   }
 
-  // Saturação: todas barras saturadas (sem filtro). Com filtro: só a clicada saturada, resto dessaturadas.
   function applyBarSaturation(activeIndex){
     const colors = reportsChart.data.labels.map((_,i)=>{
-      if (activeIndex == null) return 'rgba(37, 99, 235, 1)'; // todas saturadas
+      if (activeIndex == null) return 'rgba(37, 99, 235, 1)';
       return i===activeIndex ? 'rgba(37, 99, 235, 1)' : 'rgba(37, 99, 235, .25)';
     });
-    reportsChart.data.datasets[0].backgroundColor = colors;
+    if(reportsChart.config.type==='bar'){
+      reportsChart.data.datasets[0].backgroundColor = colors;
+    }
+  }
+  function applyBarSaturationOverview(activeIndex){
+    const colors = reportsChart.data.labels.map((_,i)=>{
+      if (activeIndex == null) return 'rgba(16, 185, 129, 1)';
+      return i===activeIndex ? 'rgba(16, 185, 129, 1)' : 'rgba(16, 185, 129, .25)';
+    });
+    if(reportsChart.config.type==='bar'){
+      reportsChart.data.datasets[0].backgroundColor = colors;
+    }
+  }
+
+  // Render lógico conforme visão
+  async function renderReportsByView(kpi){
+    const viewSel=document.getElementById('viewSelect');
+    const view = viewSel ? viewSel.value : 'year';
+    const overviewModeSel=document.getElementById('overviewMode');
+    const overviewMode = overviewModeSel ? overviewModeSel.value : 'years';
+
+    reportsState.kpi = kpi;
+    reportsState.view = view;
+    reportsState.overviewMode = overviewMode;
+
+    const yearLabel=document.getElementById('yearLabel');
+    const yearSelect=document.getElementById('yearSelect');
+    const overviewModeLabel=document.getElementById('overviewModeLabel');
+
+    if(view==='overview'){
+      if(yearLabel) yearLabel.style.display='none';
+      if(yearSelect) yearSelect.style.display='none';
+      if(overviewModeLabel) overviewModeLabel.style.display='';
+      if(overviewModeSel) overviewModeSel.style.display='';
+
+      if(overviewMode==='years'){
+        await loadOverviewAllYears(kpi);
+      }else{
+        await loadOverviewMonthsAllYears(kpi);
+      }
+    }else{
+      if(yearLabel) yearLabel.style.display='';
+      if(yearSelect) yearSelect.style.display='';
+      if(overviewModeLabel) overviewModeLabel.style.display='none';
+      if(overviewModeSel) overviewModeSel.style.display='none';
+      await updateReportsChartForKPI(kpi);
+    }
+  }
+
+  // Overview multi-anos: barras por ano
+  async function loadOverviewAllYears(kpi){
+    const hint=document.getElementById('reportsHint');
+    const snap = await db.ref(`dashboard_reports/${kpi}`).once('value');
+    const years=[], totals=[], dones=[], pct=[];
+    if(snap.exists()){
+      Object.entries(snap.val()||{}).forEach(([yearStr, node])=>{
+        const tArr = Array.isArray(node.totals)?node.totals:[];
+        const dArr = Array.isArray(node.dones)?node.dones:[];
+        const T = tArr.reduce((a,b)=>a+Number(b||0),0);
+        const D = dArr.reduce((a,b)=>a+Number(b||0),0);
+        if(T>0){
+          years.push(Number(yearStr));
+          totals.push(T);
+          dones.push(D);
+          pct.push(Math.floor((D/T)*100));
+        }
+      });
+    }
+    reportsState.years=years;
+    reportsState.yearsTotals=totals;
+    reportsState.yearsDones=dones;
+    reportsState.yearsPct=pct;
+
+    reportsChart.config.type='bar';
+    reportsChart.data.labels = years.map(String);
+    reportsChart.data.datasets = [{
+      label:'% Completed (Anual)',
+      data:pct,
+      backgroundColor:years.map(()=> 'rgba(16,185,129,1)'),
+      borderRadius:6,
+      maxBarThickness:32
+    }];
+    reportsChart.options.scales.y.min=0; reportsChart.options.scales.y.max=100;
+    applyBarSaturationOverview(null);
+    reportsChart.update();
+
+    const tbody=document.getElementById('disciplineTBody');
+    if(tbody){
+      tbody.innerHTML='';
+      const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=4; td.textContent='Clique em um ano para ver disciplinas.'; tr.appendChild(td); tbody.appendChild(tr);
+    }
+    if(hint) hint.textContent=`Overview por ano — KPI ${kpi}. Clique em um ano para ver disciplinas.`;
+  }
+
+  // Overview: TODAS as séries de meses por ano
+  async function loadOverviewMonthsAllYears(kpi){
+    const hint=document.getElementById('reportsHint');
+    const snap = await db.ref(`dashboard_reports/${kpi}`).once('value');
+    const months = reportsState.monthsLabels.slice();
+    const seriesByYear={};
+    if(snap.exists()){
+      const palette = [
+        '#2563eb','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899',
+        '#14b8a6','#84cc16','#eab308','#06b6d4','#a855f7','#f97316',
+        '#0ea5e9','#22c55e','#f43f5e'
+      ];
+      let ci=0;
+      Object.entries(snap.val()||{}).forEach(([yearStr, node])=>{
+        const year=Number(yearStr);
+        const tArr = Array.isArray(node.totals)? node.totals.slice(0,12) : Array(12).fill(0);
+        const dArr = Array.isArray(node.dones)?  node.dones.slice(0,12)  : Array(12).fill(0);
+        for(let i=0;i<12;i++){ tArr[i]=Number(tArr[i]||0); dArr[i]=Number(dArr[i]||0); }
+        const pct = tArr.map((t,i)=> t>0 ? Math.floor((dArr[i]/t)*100) : 0);
+        const color = palette[ci++ % palette.length];
+        seriesByYear[year]={pct, totals:tArr, dones:dArr, color};
+      });
+    }
+    reportsState.seriesByYear = seriesByYear;
+
+    reportsChart.config.type='line';
+    reportsChart.data.labels = months;
+    reportsChart.data.datasets = Object.entries(seriesByYear).map(([year, s])=>({
+      label:`${year}`,
+      year:Number(year),
+      data:s.pct,
+      borderColor:s.color,
+      backgroundColor:s.color,
+      tension:.35,
+      fill:false,
+      pointRadius:3,
+      pointHoverRadius:5,
+      totals:s.totals,
+      dones:s.dones
+    }));
+    reportsChart.options.scales.y.min=0; reportsChart.options.scales.y.max=100;
+    reportsChart.update();
+
+    const tbody=document.getElementById('disciplineTBody');
+    if(tbody){
+      tbody.innerHTML='';
+      const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=4; td.textContent='Clique em um ponto (ano/mês) para ver disciplinas do ano.'; tr.appendChild(td); tbody.appendChild(tr);
+    }
+    if(hint) hint.textContent=`Overview por meses (todos os anos) — KPI ${kpi}.`;
   }
 
   async function updateReportsChartForKPI(kpi){
@@ -639,7 +873,7 @@
       series.totals = Array.isArray(val.totals) ? val.totals : [];
       series.dones  = Array.isArray(val.dones)  ? val.dones  : [];
       series.pct    = Array.isArray(val.pct)    ? val.pct    : [];
-      if (hint) hint.textContent = `Viewiing ${kpi} — Year ${year} (Firebase)`;
+      if (hint) hint.textContent = `Viewing ${kpi} — Year ${year} (Firebase)`;
     } else {
       if (hint) hint.textContent='Empty results - Check Firebase for details';
     }
@@ -647,12 +881,19 @@
     reportsState.kpi=kpi; reportsState.year=year; reportsState.selectedIndex=null;
     reportsState.labels=series.labels; reportsState.totals=series.totals; reportsState.dones=series.dones; reportsState.pct=series.pct;
 
+    reportsChart.config.type='bar';
     reportsChart.data.labels = series.labels;
-    reportsChart.data.datasets[0].data = series.pct;
-    applyBarSaturation(null); // TODAS saturadas inicialmente
+    reportsChart.data.datasets = [{
+      label:'% Completed',
+      data: series.pct,
+      backgroundColor: series.labels.map(()=> 'rgba(37,99,235,1)'),
+      borderRadius:6,
+      maxBarThickness:32
+    }];
+    reportsChart.options.scales.y.min=0; reportsChart.options.scales.y.max=100;
+    applyBarSaturation(null);
     reportsChart.update();
 
-    // Tabela anual por padrão (persistente via Firebase)
     await renderYearDisciplinesFromFirebase(kpi, year);
   }
 
@@ -687,7 +928,7 @@
       const tdn=document.createElement('td'); tdn.textContent=r.name;
       const ttt=document.createElement('td'); ttt.textContent=r.total;
       const tdd=document.createElement('td'); tdd.textContent=r.done;
-      const tpp=document.createElement('td'); tpp.textContent=r.pct+'%';
+      const tpp=document.createElement('td'); tpp.textContent=(r.pct!=null? r.pct : (r.total>0? Math.floor((r.done/r.total)*100):0))+'%';
       tr.appendChild(tdn); tr.appendChild(ttt); tr.appendChild(tdd); tr.appendChild(tpp);
       tbody.appendChild(tr);
     });
@@ -714,8 +955,86 @@
     await renderYearDisciplinesFromFirebase(kpi, year);
   }
 
-  // APPLY/RESET/ADMIN placeholders
-  async function apply(){ alert('Aplique sua rotina completa de APPLY aqui (mantida do projeto).'); }
+  // APPLY/RESET/ADMIN
+  async function apply(){
+    try{
+      if(!workbook){ alert('Nenhuma planilha carregada. Faça upload da IW39 antes de aplicar.'); return; }
+
+      // Guarda filtros atuais (KPI ativo e visão)
+      const activeBtn=document.querySelector('.report-controls .btn.active');
+      const currentKPI = activeBtn ? activeBtn.dataset.kpi : 'OATS';
+      const viewSel=document.getElementById('viewSelect');
+      const overviewModeSel=document.getElementById('overviewMode');
+      const yearSel=document.getElementById('yearSelect');
+      const currentView = viewSel ? viewSel.value : 'year';
+      const currentOverviewMode = overviewModeSel ? overviewModeSel.value : 'years';
+      const currentYear = yearSel && yearSel.value ? Number(yearSel.value) : null;
+
+      // 1) Sumariza toda a planilha por KPI/Ano/Mês
+      const summary = summarizeWorkbookByYearMonth(workbook);
+      const ts = Date.now();
+
+      // 2) Monta updates: merge com anos existentes e atualiza arrays
+      const updates={};
+      const LABELS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+
+      for(const kpi of ['OATS','SCE','CRIT1']){
+        const years = Object.keys(summary[kpi]).map(Number);
+        for(const year of years){
+          const nodePath=`dashboard_reports/${kpi}/${year}`;
+          const snap = await db.ref(nodePath).once('value');
+          const existing = snap.exists()? (snap.val()||{}) : {};
+          const totals = Array.isArray(existing.totals)? existing.totals.slice() : Array(12).fill(0);
+          const dones  = Array.isArray(existing.dones)?  existing.dones.slice()  : Array(12).fill(0);
+          const pct    = Array.isArray(existing.pct)?    existing.pct.slice()    : Array(12).fill(0);
+
+          const sumYear = summary[kpi][year];
+          for(let m=0;m<12;m++){
+            totals[m] = Number(sumYear.totals[m]||0);
+            dones[m]  = Number(sumYear.dones[m]||0);
+            pct[m]    = totals[m]>0 ? Math.floor((dones[m]/totals[m])*100) : 0;
+          }
+
+          updates[`${nodePath}/labels`] = LABELS;
+          updates[`${nodePath}/totals`] = totals;
+          updates[`${nodePath}/dones`]  = dones;
+          updates[`${nodePath}/pct`]    = pct;
+
+          // Atualiza snapshot live para mês/ano atuais
+          const now=new Date();
+          if(year===now.getFullYear()){
+            const m=now.getMonth();
+            const cur=dones[m]||0, max=totals[m]||1, p=max>0? Math.floor((cur/max)*100):0;
+            updates[`dashboard_live/${kpi}`] = { cur, max: Math.max(max,1), pct:p, ts };
+            const ymKey = `${year}-${String(m+1).padStart(2,'0')}`;
+            const newEventKey = db.ref(`dashboard_events/${kpi}/${ymKey}`).push().key;
+            updates[`dashboard_events/${kpi}/${ymKey}/${newEventKey}`] = { cur, max: Math.max(max,1), pct:p, ts };
+          }
+        }
+      }
+
+      await db.ref().update(updates);
+
+      alert('Planilha aplicada: KPIs sumarizados por mês/ano no Firebase. Gráficos serão atualizados.');
+
+      await loadYearsFromFirebaseAndPopulateSelect();
+
+      if(viewSel) viewSel.value = currentView;
+      if(overviewModeSel) overviewModeSel.value = currentOverviewMode;
+      if(yearSel && currentYear!=null) yearSel.value = String(currentYear);
+
+      if(currentView==='overview'){
+        await renderReportsByView(currentKPI);
+      }else{
+        await updateReportsChartForKPI(currentKPI);
+      }
+
+    }catch(err){
+      console.error(err);
+      alert('Falha ao aplicar dados ao Firebase. Verifique o console para detalhes.');
+    }
+  }
+
   async function resetAllData(){ alert('Ajuste sua rotina de RESET aqui (mantida do projeto).'); }
   function checkPass(){
     if(prompt('Senha:')==='222324'){
@@ -770,14 +1089,52 @@
     const btn=e.target.closest('.report-controls .btn'); if(!btn) return;
     document.querySelectorAll('.report-controls .btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
-    await updateReportsChartForKPI(btn.dataset.kpi);
+    await renderReportsByView(btn.dataset.kpi);
   });
 
-  // Select ano
+  // Selects
   document.getElementById('yearSelect')?.addEventListener('change', async ()=>{
     const activeBtn=document.querySelector('.report-controls .btn.active');
-    if(activeBtn) await updateReportsChartForKPI(activeBtn.dataset.kpi);
+    if(activeBtn) await renderReportsByView(activeBtn.dataset.kpi);
   });
+  document.getElementById('viewSelect')?.addEventListener('change', async ()=>{
+    const activeBtn=document.querySelector('.report-controls .btn.active');
+    if(activeBtn) await renderReportsByView(activeBtn.dataset.kpi);
+  });
+  document.getElementById('overviewMode')?.addEventListener('change', async ()=>{
+    const activeBtn=document.querySelector('.report-controls .btn.active');
+    if(activeBtn) await renderReportsByView(activeBtn.dataset.kpi);
+  });
+
+  // ============================================================
+  // REDIRECIONAMENTO APÓS REFRESH/F5 DEPOIS DE UM TEMPO DEFINIDO
+  // ============================================================
+  (function setupRefreshRedirect(){
+    // Ajuste aqui o tempo limite (ex.: 10 minutos)
+    const REDIRECT_TIMEOUT_MS = 1 * 60 * 1000; // 10 minutos
+
+    try{
+      const STORAGE_KEY = 'lastVisitTs';
+      const now = Date.now();
+      const last = Number(localStorage.getItem(STORAGE_KEY) || 0);
+      localStorage.setItem(STORAGE_KEY, String(now));
+
+      // Heurística simples para detectar F5/refresh:
+      // Se houve visita anterior (last>0) e o delta de tempo for MAIOR que o timeout,
+      // significa que o usuário retornou após o tempo limite — redireciona para index.html
+      if(last > 0 && (now - last) > REDIRECT_TIMEOUT_MS){
+        // Evita loop se a própria página já for index.html
+        const isIndex = /\/index\.html?$/.test(location.pathname) || location.pathname === '/' || location.pathname === '';
+        if(!isIndex){
+          // Redireciona preservando a origem se necessário (pode ajustar para apenas 'index.html')
+          location.replace('index.html');
+        }
+      }
+    }catch(e){
+      // Falha silenciosa se localStorage desabilitado
+      console.warn('Refresh redirect storage unavailable:', e);
+    }
+  })();
 </script>
 </body>
 </html>
