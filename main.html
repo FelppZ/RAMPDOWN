@@ -23,33 +23,52 @@
       --bar:#2563eb;
       --bar-dim:rgba(37,99,235,.35);
       --bar-full:rgba(37,99,235,1);
+      /* Transitions */
+      --page-fade-duration: 500ms;
+      --page-fade-ease: cubic-bezier(.2,.7,.2,1);
     }
     *{box-sizing:border-box;margin:0;padding:0}
-    body{background:#fcfcfc;color:var(--text-dark);min-height:100vh;font-family:var(--font-light)}
+    body{
+      background: linear-gradient(135deg, #f7fafc 0%, #fdfdfd 42%, #f8fbff 100%);
+      color:var(--text-dark);min-height:100vh;font-family:var(--font-light)
+    }
 
-    /* HEADER */
-    header{position:sticky;top:0;background:var(--tech-black);height:100px;display:flex;align-items:center;padding:0 50px;overflow:hidden;z-index:1000}
-    #bg-canvas{position:absolute;top:0;left:0;width:100%;height:100px;opacity:.3;z-index:1}
-    header::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;background:linear-gradient(90deg,rgba(0,0,0,1) 0%,rgba(0,0,0,.85) 6%,rgba(0,0,0,.35) 14%,rgba(0,0,0,0) 22%,rgba(0,0,0,0) 78%,rgba(0,0,0,.35) 86%,rgba(0,0,0,.85) 94%,rgba(0,0,0,1) 100%)}
+    /* HEADER — novo com gradientes e ondas */
+    header{
+      position:sticky;top:0;background:var(--tech-black);height:100px;display:flex;align-items:center;padding:0 50px;overflow:hidden;z-index:1000;
+      box-shadow: 0 8px 24px rgba(0,0,0,.22);
+    }
+    #bg-canvas{position:absolute;top:0;left:0;width:100%;height:100px;opacity:.28;z-index:1}
+    header::before{
+      content:""; position:absolute; inset:-30% -10% 0 -10%; z-index:0;
+      background:
+        radial-gradient(800px 400px at 8% 20%, rgba(37,99,235,.32), transparent 60%),
+        radial-gradient(600px 300px at 92% 30%, rgba(124,58,237,.28), transparent 60%);
+      filter: blur(10px);
+    }
+    header::after{
+      content:"";position:absolute;inset:0;pointer-events:none;z-index:2;
+      background:linear-gradient(90deg,rgba(0,0,0,1) 0%,rgba(0,0,0,.85) 6%,rgba(0,0,0,.35) 14%,rgba(0,0,0,0) 22%,rgba(0,0,0,0) 78%,rgba(0,0,0,.35) 86%,rgba(0,0,0,.85) 94%,rgba(0,0,0,1) 100%)
+    }
     .header-content{position:relative;z-index:3;display:flex;justify-content:space-between;width:100%;align-items:center}
     .left-group{display:flex;align-items:center;gap:16px}
-    .left-group img{height:42px;object-fit:contain}
+    .left-group img{height:42px;object-fit:contain;filter:drop-shadow(0 6px 14px rgba(0,0,0,.25))}
     .v-line{width:2px;height:36px;background:#fff;opacity:.5}
     .title-group{display:flex;flex-direction:column;gap:4px}
-    .program-title{font-family:var(--font-bold);font-size:1.4rem;color:#fff;line-height:1}
-    .subtitle{font-size:.75rem;color:rgba(255,255,255,.7);letter-spacing:.5px}
-    #sync-status{font-family:var(--font-bold);font-size:.7rem;display:flex;align-items:center;gap:8px;color:#fff}
+    .program-title{font-family:var(--font-bold);font-size:1.4rem;color:#fff;line-height:1;letter-spacing:.8px}
+    .subtitle{font-size:.78rem;color:rgba(255,255,255,.8);letter-spacing:.6px}
+    #sync-status{font-family:var(--font-bold);font-size:.72rem;display:flex;align-items:center;gap:8px;color:#fff}
     .dot{width:8px;height:8px;border-radius:50%;background:#444}
     .online{color:var(--success)}.online .dot{background:var(--success);box-shadow:0 0 10px var(--success)}
     .offline{color:var(--danger)}.offline .dot{background:var(--danger);box-shadow:0 0 10px var(--danger)}
 
     /* SIDEBAR */
-    .sidebar{position:fixed;top:100px;left:0;bottom:0;width:220px;background:var(--sidebar-bg);color:#fff;display:flex;flex-direction:column;padding:16px 10px;z-index:900;border-right:1px solid rgba(255,255,255,.06);transition:transform .25s ease}
+    .sidebar{position:fixed;top:100px;left:0;bottom:0;width:220px;background:var(--sidebar-bg);color:#fff;display:flex;flex-direction:column;padding:16px 10px;z-index:900;border-right:1px solid rgba(255,255,255,.08);transition:transform .25s ease}
     .sidebar.hidden{transform:translateX(-230px)}
     .sidebar nav{display:flex;flex-direction:column;gap:6px;height:100%}
-    .nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:#cbd5e1;cursor:pointer}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;color:#cbd5e1;cursor:pointer;transition:.25s}
     .nav-item:hover{background:var(--sidebar-hover);color:#fff}
-    .nav-item.active{background:var(--sidebar-active);color:#fff}
+    .nav-item.active{background:var(--sidebar-active);color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06)}
     .nav-item .icon{width:22px;display:inline-flex;align-items:center;justify-content:center}
     .nav-item .icon svg{width:18px;height:18px;opacity:.9;color:#cbd5e1}
     .nav-item.active .icon svg{opacity:1;color:#ffffff}
@@ -66,9 +85,19 @@
     .container{max-width:1300px;margin:40px auto;padding:0 40px;margin-left:220px;transition:margin-left .25s ease}
     .presentation-mode .container{margin-left:0}
 
-    .page{display:none}
-    .page.active{display:block}
-    .section-results-title{font-family:var(--font-bold);font-size:1.6rem;color:#1a1a1a;text-transform:uppercase;letter-spacing:4px;margin-bottom:30px;border-bottom:2px solid #f0f0f0;padding-bottom:10px}
+    /* Páginas + transições suaves */
+    .page{display:block;opacity:0;transform: translateY(8px);pointer-events:none;transition: opacity var(--page-fade-duration) var(--page-fade-ease), transform var(--page-fade-duration) var(--page-fade-ease);position: relative;z-index: 0;}
+    .page.active{opacity:1;transform: translateY(0);pointer-events:auto;z-index: 1;}
+    .page:not(.active){ visibility:hidden; height:0; overflow:hidden; }
+
+    .section-results-title{
+      font-family:var(--font-bold);font-size:1.7rem;color:#0f172a;text-transform:uppercase;
+      letter-spacing:3px;margin-bottom:16px;border:none;padding-bottom:0;position:relative;
+    }
+    .section-results-title::after{
+      content:"";position:absolute;left:0;right:0;bottom: -6px;height:3px;
+      background:linear-gradient(90deg,rgba(0,0,0,.08),rgba(0,0,0,.02))
+    }
 
     /* KPIs */
     .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:30px;align-items:start}
@@ -87,17 +116,19 @@
 
     /* REPORTS */
     .report-controls{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
-    .report-controls .btn{padding:8px 12px;border:1px solid #111;border-radius:6px;background:#fff;color:#111;cursor:pointer;transition:.2s}
+    .report-controls .btn{padding:8px 12px;border:1px solid #111;border-radius:999px;background:#fff;color:#111;cursor:pointer;transition:.2s;font-weight:600}
     .report-controls .btn:hover{background:#111;color:#fff}
-    .report-controls .btn.active{background:#111;color:#fff}
-    .time-filter{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+    .report-controls .btn.active{background:linear-gradient(120deg, var(--accent), #3b82f6);color:#fff;border-color:#1e3a8a;box-shadow:0 6px 18px rgba(37,99,235,.25)}
+    .time-filter{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
     .time-filter label{font-size:12px;color:#334155}
-    .time-filter select{padding:8px;border:1px solid #111;border-radius:6px;background:#fff;color:#111;cursor:pointer}
-    .reports-chart-wrap{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px}
+    .time-filter select{padding:8px;border:1px solid #111;border-radius:10px;background:#fff;color:#111;cursor:pointer;transition:.2s;font-weight:600}
+    .time-filter select:hover{ box-shadow:0 0 0 3px rgba(37,99,235,.12) }
+    .reports-chart-wrap{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
     .reports-chart{height:300px}
+    .reports-hint{ color:#334155; font-size:.9rem; margin-top:8px; }
 
     /* Disciplinas */
-    .discipline-wrap{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin-top:16px}
+    .discipline-wrap{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin-top:16px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
     .discipline-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
     .discipline-title{font-family:var(--font-bold);font-size:1.05rem}
     .discipline-table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed;border:1px solid var(--border);border-radius:10px;overflow:hidden}
@@ -148,19 +179,14 @@
     .notify.warning{border-color:#f59e0b33}
     .notify .title{font-family:var(--font-bold); margin-bottom:2px; font-size:.95rem}
     .notify .msg{color:#334155}
-    .notify .dot{
-      width:10px; height:10px; border-radius:50%; margin-top:4px;
-    }
+    .notify .dot{width:10px; height:10px; border-radius:50%; margin-top:4px;}
     .notify.success .dot{background:#10b981}
     .notify.error .dot{background:#ef4444}
     .notify.info .dot{background:#2563eb}
     .notify.warning .dot{background:#f59e0b}
     .notify .close{margin-left:auto; cursor:pointer; opacity:.6}
     .notify .close:hover{opacity:1}
-    @keyframes slideIn{
-      from{transform:translateY(8px); opacity:0;}
-      to{transform:translateY(0); opacity:1;}
-    }
+    @keyframes slideIn{from{transform:translateY(8px); opacity:0;} to{transform:translateY(0); opacity:1;}}
   </style>
 </head>
 <body>
@@ -168,34 +194,26 @@
 <!-- SIDEBAR -->
 <aside class="sidebar" id="sidebar">
   <nav>
-    <!-- KPIs -->
     <div class="nav-item active" data-page="page-kpis">
       <span class="icon" aria-hidden="true">
-        <!-- Material Symbols: show_chart -->
         <svg viewBox="0 0 24 24" fill="currentColor">
           <path d="M3 3h2v14h14v2H3V3zm16 4-4.5 6.01-3.5-4.51L7 12.99V15l3.5-4.5 3.5 4.5L21 7v-2l-2 2z"/>
         </svg>
       </span>
       <span class="label">KPIs</span>
     </div>
-
-    <!-- Reports -->
     <div class="nav-item" data-page="page-reports">
       <span class="icon" aria-hidden="true">
-        <!-- Material Symbols: insert_chart -->
         <svg viewBox="0 0 24 24" fill="currentColor">
           <path d="M19 3H5c-1.1 0-2 .9-2 2v14h2V5h14V3zm-3 6h-2v8h2V9zm-4 4H10v4h2v-4zM7 13H5v6h2v-6z"/>
         </svg>
       </span>
       <span class="label">Reports</span>
     </div>
-
-    <!-- Admin -->
     <div class="nav-item" data-page="page-admin">
       <span class="icon" aria-hidden="true">
-        <!-- Material Symbols: settings -->
         <svg viewBox="0 0 24 24" fill="currentColor">
-          <path d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1a7.03 7.03 0 0 0-1.69-.98l-.38-2.65A.5.5 0 0 0 13 2h-4c-.24 0 -.44.17-.49.41l-.38 2.65c-.6.23-1.16.53-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46c-.12.22-.07.49.12.64l2.11 1.65c-.05.32-.08.65-.08.98s.03.66.08.98L1.48 14.6a.5.5 0 0 0-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.53.45 1.09.82 1.69 1.05l.38 2.65c.05.24.25.41.49.41h4c.24 0 .44-.17.49-.41l.38-2.65c.6-.23 1.16-.6 1.69-1.05l2.49 1c.22 .08 .49 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.62zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/>
+          <path d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1a7.03 7.03 0 0 0-1.69-.98l-.38-2.65A.5.5 0 0 0 13 2h-4c-.24 0 -.44.17-.49.41l-.38 2.65c-.6.23-1.16.53-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46c-.12.22-.07.49.12.64l2.11 1.65c-.05.32-.08.65-.08.98s.03.66.08.98L1.48 14.6a.5.5 0 0 0-.12.64l-2 3.46c.12.22.39.3.61.22l 2.49-1c.53.45 1.09.82 1.69 1.05l.38 2.65c.05.24.25.41.49.41h4c.24 0 .44-.17.49-.41l.38-2.65c.6-.23 1.16-.6 1.69-1.05l2.49 1c.22 .08 .49 0 .61-.22l2-3.46a.5.5 0 0 0-.12-.64l-2.11-1.62zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/>
         </svg>
       </span>
       <span class="label">Admin</span>
@@ -204,7 +222,7 @@
   <div class="toggle-arrow" id="toggleSidebar" title="Ocultar/mostrar menu">↔</div>
 </aside>
 
-<!-- HEADER -->
+<!-- HEADER (novo) -->
 <header>
   <canvas id="bg-canvas"></canvas>
   <div class="header-content">
@@ -225,7 +243,7 @@
 <!-- PAGES -->
 <main class="container">
   <!-- KPIs -->
-  <section id="page-kpis" class="page active">
+  <section id="page-kpis" class="page active" aria-hidden="false">
     <h1 id="main-results-title" class="section-results-title">LOADING RESULTS</h1>
     <div class="kpi-grid">
       <div class="card" id="card-oats">
@@ -258,7 +276,7 @@
   </section>
 
   <!-- Reports -->
-  <section id="page-reports" class="page">
+  <section id="page-reports" class="page" aria-hidden="true">
     <h1 class="section-results-title">OVERVIEW REPORTS</h1>
 
     <div class="report-controls">
@@ -287,7 +305,7 @@
     <div class="reports-chart-wrap">
       <canvas id="reportsChart" class="reports-chart"></canvas>
     </div>
-    <p class="value-text" id="reportsHint">Selecione o KPI e a visão. Clique em um mês/ano para ver disciplinas.</p>
+    <p class="reports-hint" id="reportsHint">Selecione o KPI e a visão. Clique em um mês/ano para ver disciplinas.</p>
 
     <div class="discipline-wrap">
       <div class="discipline-header">
@@ -312,17 +330,8 @@
     </div>
   </section>
 
-  <!-- Planner -->
-  <section id="page-planner" class="page">
-    <h1 class="section-results-title">PLANNER</h1>
-    <div class="card">
-      <div class="card-title">Roadmap & Tasks</div>
-      <p class="value-text">Cronogramas, milestones e tarefas futuras.</p>
-    </div>
-  </section>
-
   <!-- Admin -->
-  <section id="page-admin" class="page">
+  <section id="page-admin" class="page" aria-hidden="true">
     <h1 class="section-results-title">ADMIN</h1>
     <div class="card">
       <div class="card-title">Manual Update</div>
@@ -333,18 +342,15 @@
       <h2 style="font-family:var(--font-bold);margin-bottom:10px;">UPDATE SYSTEM - EXCEL</h2>
       <div class="controls">
         <input type="file" id="file-input" accept=".xlsx,.xls,.csv" />
-        <button class="btn" onclick="apply()">Aplicar ao Dashboard</button>
-        <button class="btn" style="background:#ef4444;border-color:#ef4444;" onclick="resetAllData()">Resetar Tudo</button>
+        <button class="btn" onclick="apply()">Update Dashboard</button>
+        <button class="btn" style="background:#ef4444;border-color:#ef4444;" onclick="resetAllData()">Reset data</button>
       </div>
       <div class="hint">Double check the values given from the spreadsheet.</div>
     </div>
   </section>
 </main>
 
-<!-- Botão global (mostrar menu) — só visível quando oculto -->
 <div class="show-menu-global" id="showMenuGlobal" title="Mostrar Menu">»</div>
-
-<!-- Notifications container -->
 <div class="notify-container" id="notifyContainer" aria-live="polite"></div>
 
 <script>
@@ -395,21 +401,65 @@
   toggleSidebarBtn.addEventListener('click',()=>applyPresentationMode(!sidebarHidden));
   showMenuGlobalBtn.addEventListener('click',()=>applyPresentationMode(false));
 
-  // NAV SPA
-  const navItems=document.querySelectorAll('.nav-item'); const pages=document.querySelectorAll('.page');
+  // NAV SPA com transição suave
+  const navItems=document.querySelectorAll('.nav-item');
+  const pages=document.querySelectorAll('.page');
+  function setActivePage(targetId){
+    pages.forEach(p=>{
+      const isActive = p.id === targetId;
+      p.classList.toggle('active', isActive);
+      p.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+      if(isActive) window.scrollTo({top:0,behavior:'smooth'});
+    });
+  }
   navItems.forEach(item=>{
     item.addEventListener('click',()=>{
-      navItems.forEach(n=>n.classList.remove('active')); item.classList.add('active');
+      navItems.forEach(n=>n.classList.remove('active'));
+      item.classList.add('active');
       const target=item.dataset.page;
-      pages.forEach(p=>p.classList.remove('active'));
-      document.getElementById(target).classList.add('active');
-      window.scrollTo({top:0,behavior:'smooth'});
+      setActivePage(target);
       if(target==='page-reports' && !reportsChart){
         initReportsChart();
         loadYearsFromFirebaseAndPopulateSelect();
       }
     });
   });
+
+  // Header — ondas animadas
+  const bgCanvas = document.getElementById('bg-canvas');
+  const bgCtx = bgCanvas?.getContext('2d');
+  let bgCount = 0;
+  function initHeaderWaves(){
+    if(!bgCanvas) return;
+    bgCanvas.width = window.innerWidth;
+    bgCanvas.height = 100;
+  }
+  function drawHeaderWaves(){
+    if(!bgCtx || !bgCanvas) return;
+    bgCtx.clearRect(0,0,bgCanvas.width,bgCanvas.height);
+    const centerY = bgCanvas.height/2;
+    const color = 'rgba(36,80,255,1)';
+    const waves = [
+      { amplitude: Math.max(34,bgCanvas.height*.09), frequency:.0046, phase:0, lineWidth:2.8 },
+      { amplitude: Math.max(28,bgCanvas.height*.08), frequency:.0062, phase:Math.PI/2.6, lineWidth:2.6 },
+      { amplitude: Math.max(22,bgCanvas.height*.07), frequency:.0042, phase:Math.PI/1.6, lineWidth:2.4 }
+    ];
+    for(const w of waves){
+      bgCtx.beginPath();
+      bgCtx.lineWidth = w.lineWidth;
+      bgCtx.strokeStyle = color;
+      for(let x=0; x<bgCanvas.width; x+=1){
+        const y = centerY + Math.sin(x*w.frequency + bgCount + w.phase) * w.amplitude;
+        if(x===0) bgCtx.moveTo(x,y); else bgCtx.lineTo(x,y);
+      }
+      bgCtx.stroke();
+    }
+    bgCount += .01;
+    requestAnimationFrame(drawHeaderWaves);
+  }
+  window.addEventListener('resize', initHeaderWaves);
+  initHeaderWaves();
+  drawHeaderWaves();
 
   // Helpers
   const toYMD=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
@@ -423,52 +473,24 @@
     return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
   };
 
-  // CORREÇÃO MARÇO — Conversões robustas e normalização local
+  // CORREÇÃO MARÇO
   const EXCEL_1904_SYSTEM=false;
-  function excelSerialToDate(n){
-    // Ajuste de leap-bug do Excel e 1900/1904 systems
-    const base = EXCEL_1904_SYSTEM ? Date.UTC(1904,0,1) : Date.UTC(1899,11,30);
-    // Excel considera 1900-02-29; versões simplificadas ignoram +1 após 59,
-    // mas SheetJS já trata isso geralmente. Mantemos simples:
-    return new Date(base + Math.round(n*86400000));
-  }
-  function normalizeLocalDate(d){
-    // Zera hora local para evitar rollovers de fuso que deslocavam MARÇO
-    return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0,0,0,0);
-  }
+  function excelSerialToDate(n){const base = EXCEL_1904_SYSTEM ? Date.UTC(1904,0,1) : Date.UTC(1899,11,30);return new Date(base + Math.round(n*86400000));}
+  function normalizeLocalDate(d){return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0,0,0,0);}
   function parseDateAny(v){
-    // Date ou serial number
     if(v instanceof Date && !isNaN(v)) return normalizeLocalDate(v);
-    if(typeof v==='number' && isFinite(v)){
-      const dt = excelSerialToDate(v);
-      return normalizeLocalDate(new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()));
-    }
+    if(typeof v==='number' && isFinite(v)){const dt = excelSerialToDate(v);return normalizeLocalDate(new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()));}
     const s = (v==null?'':String(v)).replace(/\u00A0/g,' ').trim();
     if(!s) return null;
-
-    // ISO-like YYYY-MM-DD
     let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);
-    if(m){
-      const y=+m[1], mo=+m[2]-1, da=+m[3];
-      const dt = new Date(y, mo, da);
-      if(!isNaN(dt)) return normalizeLocalDate(dt);
-    }
-
-    // BR DD/MM/YYYY ou DD-MM-YYYY
+    if(m){const y=+m[1], mo=+m[2]-1, da=+m[3];const dt = new Date(y, mo, da); if(!isNaN(dt)) return normalizeLocalDate(dt);}
     m = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/.exec(s);
-    if(m){
-      const da=+m[1], mo=+m[2]-1, y=(+m[3]<100 ? 2000+(+m[3]) : +m[3]);
-      const dt = new Date(y, mo, da);
-      if(!isNaN(dt)) return normalizeLocalDate(dt);
-    }
-
-    // Fallback: Date nativa (pode ter timezone). Normaliza.
-    const nat = new Date(s);
-    if(!isNaN(nat)) return normalizeLocalDate(new Date(nat.getFullYear(), nat.getMonth(), nat.getDate()));
+    if(m){const da=+m[1], mo=+m[2]-1, y=(+m[3]<100 ? 2000+(+m[3]) : +m[3]); const dt = new Date(y, mo, da); if(!isNaN(dt)) return normalizeLocalDate(dt);}
+    const nat = new Date(s); if(!isNaN(nat)) return normalizeLocalDate(new Date(nat.getFullYear(), nat.getMonth(), nat.getDate()));
     return null;
   }
 
-  // KPI Charts — registram mudanças do Firebase
+  // KPI Charts
   function initChart(id,label,color){
     const el=document.getElementById(id); if(!el) return;
     const ctx=el.getContext('2d');
@@ -479,19 +501,14 @@
         {label:'META 100%',data:[],borderColor:'rgba(0,0,0,.35)',borderWidth:1.5,borderDash:[6,4],pointRadius:0}
       ]},
       options:{responsive:true,maintainAspectRatio:false,
-        plugins:{
-          legend:{display:false},
-          tooltip:{callbacks:{
-            label:(ctx)=>{
-              const pct = typeof ctx.parsed === 'number' ? Number(ctx.parsed) : Number(ctx.parsed?.y ?? 0);
-              const raw = ctx.raw;
-              const cur = raw && typeof raw==='object' ? Number(raw.cur ?? NaN) : NaN;
-              const max = raw && typeof raw==='object' ? Number(raw.max ?? NaN) : NaN;
-              if(!isNaN(cur) && !isNaN(max) && max>0) return `${pct}% — ${cur} / ${max}`;
-              return `${pct}%`;
-            }
-          }}
-        },
+        plugins:{legend:{display:false},tooltip:{callbacks:{label:(ctx)=>{
+          const pct = typeof ctx.parsed === 'number' ? Number(ctx.parsed) : Number(ctx.parsed?.y ?? 0);
+          const raw = ctx.raw;
+          const cur = raw && typeof raw==='object' ? Number(raw.cur ?? NaN) : NaN;
+          const max = raw && typeof raw==='object' ? Number(raw.max ?? NaN) : NaN;
+          if(!isNaN(cur) && !isNaN(max) && max>0) return `${pct}% — ${cur} / ${max}`;
+          return `${pct}%`;
+        }}}},
         interaction:{mode:'nearest',intersect:true,axis:'x'},
         scales:{x:{display:false},y:{display:false,min:0,max:105}}
       }
@@ -528,7 +545,7 @@
     }
   });
 
-  // KPI mini-séries últimas 2 janelas de mês para cobrir 7 dias
+  // KPI mini-séries (7 dias, cobrindo mês atual + anterior)
   const DAYS_BACK=7;
   function getLastDaysKeys(n){const out=[];const now=new Date();for(let i=n-1;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i);out.push(toYMD(d));}return out;}
   kpis.forEach(kpi=>{
@@ -561,16 +578,16 @@
     });
   });
 
-  // IW39 índices
+  // IW39 índices (ajuste conforme colunas da sua planilha)
   const IDX_A=0, IDX_D=8, IDX_J=14, IDX_L=15, IDX_M=12;
 
-  // Upload IW39 (notificação)
+  // Upload IW39
   document.getElementById('file-input')?.addEventListener('change', async (ev)=>{
     const file=ev.target.files?.[0]; if(!file){ notify('Nenhum arquivo selecionado.','warning','Upload'); return; }
     try{
       const buf=await file.arrayBuffer();
       workbook=XLSX.read(buf,{type:'array'});
-      notify('IW39 Table loaded successfully, click update to implement at dashboad .','info','Upload completed');
+      notify('IW39 Table loaded successfully, click update to implement at dashboard.','info','Upload completed');
       refreshYearsFromWorkbook();
     }catch(e){
       console.error(e);
@@ -578,8 +595,7 @@
     }
   });
 
-  // Data utils
-  function normWS(s){return (s==null?'':String(s)).replace(/\u00A0/g,' ').trim();}
+  // Normalização / matching
   const norm=(s)=>(s==null?'':String(s)).toUpperCase().replace(/\u00A0/g,' ').replace(/[–—−]/g,'-').replace(/\s+/g,' ').trim();
   const SEP=String.raw`[\s,;:\/|()[\]{}<>=\\"'.-]`;
   function matchOATS(v){const f=norm(v); return new RegExp(`(^|${SEP})OATS(${SEP}|$)`).test(f);}
@@ -587,7 +603,7 @@
   function matchGENR1(v){const f=norm(v); return new RegExp(`(^|${SEP})GENR-1(${SEP}|$)`).test(f);}
   function isTECO(v){return /\bTECO\b/.test(norm(v));}
 
-  // Heurística OATS
+  // Heurística OATS (opcional)
   let oatsIgnoredCount = 0;
   function shouldIgnoreOATSRow(desc, status, dt){
     if (oatsIgnoredCount >= 4) return false;
@@ -598,14 +614,23 @@
     return false;
   }
 
-  // KPIs do mês atual
-  function monthRangeCurrent(){
-    const now=new Date();
-    return { start:new Date(now.getFullYear(),now.getMonth(),1,0,0,0,0), end:new Date(now.getFullYear(),now.getMonth()+1,0,23,59,59,999), month:now.getMonth(), year:now.getFullYear() };
+  // Datas
+  function excelSerialToDate(n){const base = EXCEL_1904_SYSTEM ? Date.UTC(1904,0,1) : Date.UTC(1899,11,30);return new Date(base + Math.round(n*86400000));}
+  function normalizeLocalDate(d){return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0,0,0,0);}
+  function parseDateAny(v){
+    if(v instanceof Date && !isNaN(v)) return normalizeLocalDate(v);
+    if(typeof v==='number' && isFinite(v)){const dt = excelSerialToDate(v);return normalizeLocalDate(new Date(dt.getFullYear(), dt.getMonth(), dt.getDate()));}
+    const s = (v==null?'':String(v)).replace(/\u00A0/g,' ').trim();
+    if(!s) return null;
+    let m = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(s);
+    if(m){const y=+m[1], mo=+m[2]-1, da=+m[3];const dt = new Date(y, mo, da); if(!isNaN(dt)) return normalizeLocalDate(dt);}
+    m = /^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/.exec(s);
+    if(m){const da=+m[1], mo=+m[2]-1, y=(+m[3]<100 ? 2000+(+m[3]) : +m[3]); const dt = new Date(y, mo, da); if(!isNaN(dt)) return normalizeLocalDate(dt);}
+    const nat = new Date(s); if(!isNaN(nat)) return normalizeLocalDate(new Date(nat.getFullYear(), nat.getMonth(), nat.getDate()));
+    return null;
   }
-  function sameMonthYear(d,m,y){ return d && d.getMonth()===m && d.getFullYear()===y; }
 
-  // Sumariza por KPI/Ano/Mês (geral)
+  // Sumariza por KPI/Ano/Mês
   function summarizeWorkbookByYearMonth(wb){
     const sheet=wb.SheetNames[0]; const ws=wb.Sheets[sheet];
     const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
@@ -620,11 +645,9 @@
 
     for(let i=begin;i<rows.length;i++){
       const r=rows[i]; if(!r) continue;
-      const dt=parseDateAny(r[IDX_L]); if(!dt) continue; // dt já normalizado
+      const dt=parseDateAny(r[IDX_L]); if(!dt) continue;
       const year=dt.getFullYear(); const month=dt.getMonth();
-
-      const desc = r[IDX_D];
-      const status = r[IDX_J];
+      const desc = r[IDX_D]; const status = r[IDX_J];
 
       if(matchOATS(desc)){
         if (shouldIgnoreOATSRow(desc, status, dt)) continue;
@@ -633,7 +656,7 @@
       } else if(matchGENR0(desc)){
         const y=ensureYear('SCE',year);
         y.totals[month]++; if(isTECO(status)) y.dones[month]++;
-      } else if (matchGENR1(desc)) {
+      } else if(matchGENR1(desc)){
         const y=ensureYear('CRIT1',year);
         y.totals[month]++; if(isTECO(status)) y.dones[month]++;
       }
@@ -641,7 +664,7 @@
     return result;
   }
 
-  // Sumariza por KPI/Ano/Mês/Disciplina (coluna M)
+  // Sumariza por KPI/Ano/Mês/Disciplina
   function summarizeWorkbookByDiscipline(wb){
     const sheet=wb.SheetNames[0]; const ws=wb.Sheets[sheet];
     const rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:null,raw:true});
@@ -659,9 +682,7 @@
       const r=rows[i]; if(!r) continue;
       const dt=parseDateAny(r[IDX_L]); if(!dt) continue;
       const year=dt.getFullYear(); const month=dt.getMonth();
-
-      const desc = r[IDX_D];
-      const status = r[IDX_J];
+      const desc = r[IDX_D]; const status = r[IDX_J];
       const rawDisc = r[IDX_M];
       const discipline = (rawDisc==null?'UNKNOWN':String(rawDisc)).trim() || 'UNKNOWN';
 
@@ -691,8 +712,7 @@
         for(let m=0;m<12;m++){
           const byDisc = map[kpi][year]?.[m] || {};
           const entries = Object.entries(byDisc).map(([name, obj])=>{
-            const total=Number(obj.total||0);
-            const done=Number(obj.done||0);
+            const total=Number(obj.total||0), done=Number(obj.done||0);
             const pct = total>0 ? Math.floor((done/total)*100) : 0;
             if(!yearAgg[name]) yearAgg[name]={total:0,done:0};
             yearAgg[name].total += total;
@@ -702,8 +722,7 @@
           perMonth[m]=entries;
         }
         const yearTotal = Object.entries(yearAgg).map(([name, obj])=>{
-          const total=Number(obj.total||0);
-          const done=Number(obj.done||0);
+          const total=Number(obj.total||0), done=Number(obj.done||0);
           const pct = total>0 ? Math.floor((done/total)*100) : 0;
           return { name, total, done, pct };
         }).sort((a,b)=>b.total-a.total);
@@ -735,53 +754,63 @@
     sel.value=String(years[years.length-1]);
   }
   async function loadYearsFromFirebaseAndPopulateSelect(){
-    const sel=document.getElementById('yearSelect'); if(!sel) return;
-    const snap=await db.ref('dashboard_reports').once('value');
-    sel.innerHTML='';
-    const yearsSet=new Set();
-    if(snap.exists()){
-      const all=snap.val()||{};
-      Object.values(all).forEach(kpiNode=>{
-        if(!kpiNode) return;
-        Object.keys(kpiNode).forEach(yearStr=>{
-          const y=Number(yearStr);
-          if(!isNaN(y)) yearsSet.add(y);
-        });
+  const sel=document.getElementById('yearSelect'); if(!sel) return;
+  const snap=await db.ref('dashboard_reports').once('value');
+  sel.innerHTML='';
+  const yearsSet=new Set();
+  if(snap.exists()){
+    const all=snap.val()||{};
+    Object.values(all).forEach(kpiNode=>{
+      if(!kpiNode) return;
+      Object.keys(kpiNode).forEach(yearStr=>{
+        const y=Number(yearStr);
+        if(!isNaN(y)) yearsSet.add(y);
       });
-    }
-    const years=[...yearsSet].sort((a,b)=>a-b);
-    const currentYear=new Date().getFullYear();
-    if(!years.length){
-      const opt=document.createElement('option'); opt.value=''; opt.textContent='Sem anos'; sel.appendChild(opt);
-      return;
-    }
-    years.forEach(y=>{ const opt=document.createElement('option'); opt.value=String(y); opt.textContent=String(y); sel.appendChild(opt); });
-    sel.value = years.includes(currentYear) ? String(currentYear) : String(years[years.length-1]);
-
-    const activeBtn=document.querySelector('.report-controls .btn.active');
-    if (activeBtn) await renderReportsByView(activeBtn.dataset.kpi);
+    });
   }
+  const years=[...yearsSet].sort((a,b)=>a-b);
+  const currentYear=new Date().getFullYear();
+
+  if(!years.length){
+    const opt=document.createElement('option');
+    opt.value=''; opt.textContent='Sem anos';
+    sel.appendChild(opt);
+    return;
+  }
+
+  years.forEach(y=>{
+    const opt=document.createElement('option');
+    opt.value=String(y);
+    opt.textContent=String(y);
+    sel.appendChild(opt);
+  });
+
+  // Define o ANO ATUAL como padrão (se existir), senão usa o último disponível
+  sel.value = years.includes(currentYear) ? String(currentYear) : String(years[years.length-1]);
+
+  // Renderiza imediatamente o gráfico com o ano definido acima
+  const activeBtn=document.querySelector('.report-controls .btn.active');
+  if (activeBtn) await renderReportsByView(activeBtn.dataset.kpi);
+}
 
   // Reports chart + estado
   let reportsChart=null;
   const reportsState={
     kpi:'OATS',
-    view:'year', // 'year' | 'overview'
-    overviewMode:'years', // 'years' | 'months'
+    view:'year',
+    overviewMode:'years',
     year:null,
     labels:[],
     pct:[],
     totals:[],
     dones:[],
     selectedIndex:null,
-    // Overview (anos)
     years:[],
     yearsPct:[],
     yearsTotals:[],
     yearsDones:[],
-    // Overview (meses de todos os anos)
     monthsLabels:['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'],
-    seriesByYear:{} // { [year]: {pct:[12], totals:[12], dones:[12], color:string} }
+    seriesByYear:{}
   };
 
   function initReportsChart(){
@@ -793,37 +822,32 @@
       ]},
       options:{
         responsive:true,maintainAspectRatio:false,
-        plugins:{
-          legend:{display:true},
-          tooltip:{callbacks:{
-            label:(ctx)=>{
-              if(reportsState.view==='overview' && reportsState.overviewMode==='months'){
-                const ds = reportsChart.data.datasets[ctx.datasetIndex];
-                const pct = Math.round((ctx.parsed.y??0));
-                const year = ds?.year;
-                const monthIdx = ctx.dataIndex;
-                const done = ds?.dones?.[monthIdx] ?? null;
-                const total = ds?.totals?.[monthIdx] ?? null;
-                if(total!=null && total>0 && done!=null) return `${year} ${reportsState.monthsLabels[monthIdx]} — ${pct}% — ${done}/${total}`;
-                return `${year} ${reportsState.monthsLabels[monthIdx]} — ${pct}%`;
-              }else if(reportsState.view==='overview'){
-                const pct=ctx.parsed.y ?? 0;
-                const i=ctx.dataIndex;
-                const exec=reportsState.yearsDones?.[i];
-                const tot=reportsState.yearsTotals?.[i];
-                if(typeof exec==='number' && typeof tot==='number') return `${pct}% — ${exec} / ${tot}`;
-                return `${pct}%`;
-              }else{
-                const pct=ctx.parsed.y ?? 0;
-                const i=ctx.dataIndex;
-                const exec=reportsState.dones?.[i];
-                const tot=reportsState.totals?.[i];
-                if(typeof exec==='number' && typeof tot==='number') return `${pct}% — ${exec} / ${tot}`;
-                return `${pct}%`;
-              }
-            }
-          }}
-        },
+        plugins:{legend:{display:true},tooltip:{callbacks:{label:(ctx)=>{
+          if(reportsState.view==='overview' && reportsState.overviewMode==='months'){
+            const ds = reportsChart.data.datasets[ctx.datasetIndex];
+            const pct = Math.round((ctx.parsed.y??0));
+            const year = ds?.year;
+            const monthIdx = ctx.dataIndex;
+            const done = ds?.dones?.[monthIdx] ?? null;
+            const total = ds?.totals?.[monthIdx] ?? null;
+            if(total!=null && total>0 && done!=null) return `${year} ${reportsState.monthsLabels[monthIdx]} — ${pct}% — ${done}/${total}`;
+            return `${year} ${reportsState.monthsLabels[monthIdx]} — ${pct}%`;
+          }else if(reportsState.view==='overview'){
+            const pct=ctx.parsed.y ?? 0;
+            const i=ctx.dataIndex;
+            const exec=reportsState.yearsDones?.[i];
+            const tot=reportsState.yearsTotals?.[i];
+            if(typeof exec==='number' && typeof tot==='number') return `${pct}% — ${exec} / ${tot}`;
+            return `${pct}%`;
+          }else{
+            const pct=ctx.parsed.y ?? 0;
+            const i=ctx.dataIndex;
+            const exec=reportsState.dones?.[i];
+            const tot=reportsState.totals?.[i];
+            if(typeof exec==='number' && typeof tot==='number') return `${pct}% — ${exec} / ${tot}`;
+            return `${pct}%`;
+          }
+        }}}},
         scales:{x:{grid:{display:false}},y:{min:0,max:100,ticks:{stepSize:20},grid:{color:'#eee'}}},
         onClick: async (evt, elements) => {
           if(reportsState.view==='overview' && reportsState.overviewMode==='months'){
@@ -868,24 +892,19 @@
       }
     });
   }
-
   function applyBarSaturation(activeIndex){
     const colors = reportsChart.data.labels.map((_,i)=>{
       if (activeIndex == null) return 'rgba(37, 99, 235, 1)';
       return i===activeIndex ? 'rgba(37, 99, 235, 1)' : 'rgba(37, 99, 235, .25)';
     });
-    if(reportsChart.config.type==='bar'){
-      reportsChart.data.datasets[0].backgroundColor = colors;
-    }
+    if(reportsChart.config.type==='bar'){ reportsChart.data.datasets[0].backgroundColor = colors; }
   }
   function applyBarSaturationOverview(activeIndex){
     const colors = reportsChart.data.labels.map((_,i)=>{
       if (activeIndex == null) return 'rgba(16, 185, 129, 1)';
       return i===activeIndex ? 'rgba(16, 185, 129, 1)' : 'rgba(16, 185, 129, .25)';
     });
-    if(reportsChart.config.type==='bar'){
-      reportsChart.data.datasets[0].backgroundColor = colors;
-    }
+    if(reportsChart.config.type==='bar'){ reportsChart.data.datasets[0].backgroundColor = colors; }
   }
 
   // Render lógico conforme visão (mantido)
@@ -909,11 +928,8 @@
       if(overviewModeLabel) overviewModeLabel.style.display='';
       if(overviewModeSel) overviewModeSel.style.display='';
 
-      if(overviewMode==='years'){
-        await loadOverviewAllYears(kpi);
-      }else{
-        await loadOverviewMonthsAllYears(kpi);
-      }
+      if(overviewMode==='years'){ await loadOverviewAllYears(kpi); }
+      else { await loadOverviewMonthsAllYears(kpi); }
     }else{
       if(yearLabel) yearLabel.style.display='';
       if(yearSelect) yearSelect.style.display='';
@@ -923,7 +939,7 @@
     }
   }
 
-  // Overview multi-anos (mantido)
+  // Overview multi-anos
   async function loadOverviewAllYears(kpi){
     const hint=document.getElementById('reportsHint');
     const snap = await db.ref(`dashboard_reports/${kpi}`).once('value');
@@ -947,38 +963,24 @@
     reportsState.yearsDones=dones;
     reportsState.yearsPct=pct;
 
+    if(!reportsChart) initReportsChart();
     reportsChart.config.type='bar';
     reportsChart.data.labels = years.map(String);
-    reportsChart.data.datasets = [{
-      label:'% Completed (Anual)',
-      data:pct,
-      backgroundColor:years.map(()=> 'rgba(16,185,129,1)'),
-      borderRadius:6,
-      maxBarThickness:32
-    }];
+    reportsChart.data.datasets = [{ label:'% Completed (Anual)', data:pct, backgroundColor:years.map(()=> 'rgba(16,185,129,1)'), borderRadius:6, maxBarThickness:32 }];
     reportsChart.options.scales.y.min=0; reportsChart.options.scales.y.max=100;
-    applyBarSaturationOverview(null);
-    reportsChart.update();
+    applyBarSaturationOverview(null); reportsChart.update();
 
     const tbody=document.getElementById('disciplineTBody');
-    if(tbody){
-      tbody.innerHTML='';
-      const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=4; td.textContent='Clique em um ano para ver disciplinas.'; tr.appendChild(td); tbody.appendChild(tr);
-    }
+    if(tbody){ tbody.innerHTML=''; const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=4; td.textContent='Clique em um ano para ver disciplinas.'; tr.appendChild(td); tbody.appendChild(tr); }
     if(hint) hint.textContent=`Overview por ano — KPI ${kpi}. Clique em um ano para ver disciplinas.`;
   }
 
   async function loadOverviewMonthsAllYears(kpi){
     const hint=document.getElementById('reportsHint');
     const snap = await db.ref(`dashboard_reports/${kpi}`).once('value');
-    const months = reportsState.monthsLabels.slice();
-    const seriesByYear={};
+    const months = reportsState.monthsLabels.slice(); const seriesByYear={};
     if(snap.exists()){
-      const palette = [
-        '#2563eb','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899',
-        '#14b8a6','#84cc16','#eab308','#06b6d4','#a855f7','#f97316',
-        '#0ea5e9','#22c55e','#f43f5e'
-      ];
+      const palette = ['#2563eb','#10b981','#f59e0b','#ef4444','#8b5cf6','#ec4899','#14b8a6','#84cc16','#eab308','#06b6d4','#a855f7','#f97316','#0ea5e9','#22c55e','#f43f5e'];
       let ci=0;
       Object.entries(snap.val()||{}).forEach(([yearStr, node])=>{
         const year=Number(yearStr);
@@ -992,29 +994,17 @@
     }
     reportsState.seriesByYear = seriesByYear;
 
+    if(!reportsChart) initReportsChart();
     reportsChart.config.type='line';
     reportsChart.data.labels = months;
     reportsChart.data.datasets = Object.entries(seriesByYear).map(([year, s])=>({
-      label:`${year}`,
-      year:Number(year),
-      data:s.pct,
-      borderColor:s.color,
-      backgroundColor:s.color,
-      tension:.35,
-      fill:false,
-      pointRadius:3,
-      pointHoverRadius:5,
-      totals:s.totals,
-      dones:s.dones
+      label:`${year}`, year:Number(year), data:s.pct, borderColor:s.color, backgroundColor:s.color, tension:.35, fill:false, pointRadius:3, pointHoverRadius:5, totals:s.totals, dones:s.dones
     }));
     reportsChart.options.scales.y.min=0; reportsChart.options.scales.y.max=100;
     reportsChart.update();
 
     const tbody=document.getElementById('disciplineTBody');
-    if(tbody){
-      tbody.innerHTML='';
-      const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=4; td.textContent='Clique em um ponto (ano/mês) para ver disciplinas do ano.'; tr.appendChild(td); tbody.appendChild(tr);
-    }
+    if(tbody){ tbody.innerHTML=''; const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=4; td.textContent='Clique em um ponto (ano/mês) para ver disciplinas do ano.'; tr.appendChild(td); tbody.appendChild(tr); }
     if(hint) hint.textContent=`Overview por meses (todos os anos) — KPI ${kpi}.`;
   }
 
@@ -1045,13 +1035,7 @@
 
     reportsChart.config.type='bar';
     reportsChart.data.labels = series.labels;
-    reportsChart.data.datasets = [{
-      label:'% Completed',
-      data: series.pct,
-      backgroundColor: series.labels.map(()=> 'rgba(37,99,235,1)'),
-      borderRadius:6,
-      maxBarThickness:32
-    }];
+    reportsChart.data.datasets = [{ label:'% Completed', data: series.pct, backgroundColor: series.labels.map(()=> 'rgba(37,99,235,1)'), borderRadius:6, maxBarThickness:32 }];
     reportsChart.options.scales.y.min=0; reportsChart.options.scales.y.max=100;
     applyBarSaturation(null);
     reportsChart.update();
@@ -1077,10 +1061,8 @@
     const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=4; td.textContent='Select month to see details'; tr.appendChild(td); tbody.appendChild(tr);
     if(hint) hint.textContent=`KPI ${kpi} — Year ${year}`;
   }
-
   function renderDisciplineRows(rows){
-    const tbody=document.getElementById('disciplineTBody');
-    if(!tbody) return;
+    const tbody=document.getElementById('disciplineTBody'); if(!tbody) return;
     tbody.innerHTML='';
     if(!rows || !rows.length){
       const tr=document.createElement('tr'); const td=document.createElement('td'); td.colSpan=4; td.textContent='Sem dados.'; tr.appendChild(td); tbody.appendChild(tr); return;
@@ -1100,8 +1082,7 @@
     const kpi=reportsState.kpi; const year=reportsState.year;
     const lbl=reportsState.labels[index];
     const discHint=document.getElementById('discHint');
-    const tbody=document.getElementById('disciplineTBody');
-    if(!lbl || !tbody) return;
+    const tbody=document.getElementById('disciplineTBody'); if(!lbl || !tbody) return;
 
     const snap=await db.ref(`dashboard_disciplines/${kpi}/${year}`).once('value');
     if(snap.exists()){
@@ -1117,12 +1098,11 @@
     await renderYearDisciplinesFromFirebase(kpi, year);
   }
 
-  // APPLY/RESET/ADMIN
+  // APPLY/RESET/ADMIN — Rotina de update completa
   async function apply(){
     try{
       if(!workbook){ notify('None spreadsheet has been uploaded yet.','warning','Update'); return; }
 
-      // Guarda filtros atuais
       const activeBtn=document.querySelector('.report-controls .btn.active');
       const currentKPI = activeBtn ? activeBtn.dataset.kpi : 'OATS';
       const viewSel=document.getElementById('viewSelect');
@@ -1134,7 +1114,7 @@
 
       notify('Reading spreadsheet...','info','Update');
       const summary = summarizeWorkbookByYearMonth(workbook);
-      notify('Processing data from firebase...','info','Update');
+      notify('Processing data from spreadsheet...','info','Update');
       const discSummary = summarizeWorkbookByDiscipline(workbook);
       const ts = Date.now();
 
@@ -1143,7 +1123,6 @@
 
       for(const kpi of ['OATS','SCE','CRIT1']){
         const years = Object.keys(summary[kpi]).map(Number);
-
         for(const year of years){
           // dashboard_reports
           const nodePath=`dashboard_reports/${kpi}/${year}`;
@@ -1172,7 +1151,7 @@
           updates[`${discNode}/perMonth`] = discYear.perMonth || Array(12).fill([]);
           updates[`${discNode}/yearTotal`]= discYear.yearTotal || [];
 
-          // Atualiza snapshot live e registra evento para mês/ano correntes
+          // live + events (mês corrente)
           const now=new Date();
           if(year===now.getFullYear()){
             const m=now.getMonth();
@@ -1186,32 +1165,24 @@
       }
 
       await db.ref().update(updates);
+      notify('KPIs and Disciplines successfully applied to Firebase.','success','Update');
 
-      notify('KPIs and Disciplines successfully applied to Firebase..','success','Update');
-
+      // Restaurar filtros/visão e recarregar gráficos
       await loadYearsFromFirebaseAndPopulateSelect();
-
       if(viewSel) viewSel.value = currentView;
       if(overviewModeSel) overviewModeSel.value = currentOverviewMode;
       if(yearSel && currentYear!=null) yearSel.value = String(currentYear);
-
-      if(currentView==='overview'){
-        await renderReportsByView(currentKPI);
-      }else{
-        await updateReportsChartForKPI(currentKPI);
-      }
+      if(currentView==='overview'){ await renderReportsByView(currentKPI); }
+      else { await updateReportsChartForKPI(currentKPI); }
 
     }catch(err){
       console.error(err);
       notify('Fail to upload the data. Check console for more details.','error','Update');
     }
   }
-
-  async function resetAllData(){
-    notify('Rotina de reset não implementada.','warning','Reset');
-  }
+  async function resetAllData(){ notify('Rotina de reset não implementada.','warning','Reset'); }
   function checkPass(){
-    const pwd = prompt('Senha:');
+    const pwd = prompt('Admin Password:');
     if(pwd==='222324'){
       const panel=document.getElementById('update-panel');
       if(panel){ panel.style.display='block'; window.scrollTo({top:panel.offsetTop-20,behavior:'smooth'}); }
@@ -1223,32 +1194,6 @@
 
   // Onload
   window.onload=async ()=>{
-    // Waves
-    const canvas=document.getElementById('bg-canvas'); const ctx=canvas?canvas.getContext('2d'):null; let count=0;
-    function init(){ if(canvas){ canvas.width=window.innerWidth; canvas.height=100; } }
-    function draw(){
-      if(!ctx||!canvas) return;
-      ctx.clearRect(0,0,canvas.width,canvas.height);
-      const centerY=canvas.height/2, color='rgba(36,80,255,1)';
-      const waves=[
-        { amplitude:Math.max(34,canvas.height*.09), frequency:.0046, phase:0, lineWidth:2.8 },
-        { amplitude:Math.max(28,canvas.height*.08), frequency:.0062, phase:Math.PI/2.6, lineWidth:2.6 },
-        { amplitude:Math.max(22,canvas.height*.07), frequency:.0042, phase:Math.PI/1.6, lineWidth:2.4 }
-      ];
-      for(const w of waves){
-        ctx.beginPath(); ctx.lineWidth=w.lineWidth; ctx.strokeStyle=color;
-        for(let x=0;x<canvas.width;x+=1){
-          const y=centerY+Math.sin(x*w.frequency+count+w.phase)*w.amplitude;
-          if(x===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-        }
-        ctx.stroke();
-      }
-      count+=.01; requestAnimationFrame(draw);
-    }
-    window.addEventListener('resize',init);
-    init(); draw();
-
-    // Título mês
     const meses=["JANUARY","FEBRUARY","MARCH","APRIL","MAY","JUNE","JULY","AUGUST","SEPTEMBER","OCTOBER","NOVEMBER","DECEMBER"];
     const titleEl=document.getElementById('main-results-title'); if(titleEl) titleEl.textContent=`${meses[new Date().getMonth()]} RESULTS`;
 
@@ -1292,12 +1237,8 @@
       const now = Date.now();
       const last = Number(localStorage.getItem(STORAGE_KEY) || 0);
       localStorage.setItem(STORAGE_KEY, String(now));
-      if(last > 0 && (now - last) > REDIRECT_TIMEOUT_MS){
-        const isIndex = /\/index\.html?$/.test(location.pathname) || location.pathname === '/' || location.pathname === '';
-        if(!isIndex){
-          location.replace('index.html');
-        }
-      }
+      const isIndex = /\/index\.html?$/.test(location.pathname) || location.pathname === '/' || location.pathname === '';
+      if(last > 0 && (now - last) > REDIRECT_TIMEOUT_MS && !isIndex){ location.replace('index.html'); }
     }catch(e){
       console.warn('Refresh redirect storage unavailable:', e);
     }
