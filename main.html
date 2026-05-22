@@ -94,7 +94,7 @@
       letter-spacing:3px;margin-bottom:16px;border:none;padding-bottom:0;position:relative;
     }
     .section-results-title::after{
-      content:"";position:absolute;left:0;right:0;bottom: -6px;height:3px;
+      content:"";position:absolute;left:0;right:0;bottom:-6px;height:3px;
       background:linear-gradient(90deg,rgba(0,0,0,.08),rgba(0,0,0,.02))
     }
 
@@ -167,10 +167,19 @@
       background:#fff;
       opacity: 0; transform: translateY(6px);
     }
-    .disc-list-item .name{ font-family:var(--font-bold); color:#0b0f19; flex:1; font-size:.90rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .disc-list-item .meta{ display:flex; align-items:center; gap:10px; color:#334155; font-size:.82rem; }
-    .disc-list-item .pct{ font-family:var(--font-bold); min-width:40px; text-align:right; }
-    .disc-list-item .trend{ font-family:var(--font-bold); }
+    .disc-list-item .name{
+      font-family:var(--font-bold); color:#0b0f19; flex:1; font-size:.90rem;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .disc-list-item .meta{
+      display:flex; align-items:center; gap:10px; color:#334155; font-size:.82rem;
+    }
+    .disc-list-item .pct{
+      font-family:var(--font-bold); min-width:40px; text-align:right;
+    }
+    .disc-list-item .trend{
+      font-family:var(--font-bold);
+    }
 
     /* ADMIN */
     .admin-trigger{position:fixed;bottom:30px;right:30px;background:#000;color:#fff;width:45px;height:45px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.4;z-index:1100}
@@ -536,7 +545,7 @@
     return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
   };
 
-  // Excel parse
+  // Excel date parse
   const EXCEL_1904_SYSTEM=false;
   function excelSerialToDate(n){const base = EXCEL_1904_SYSTEM ? Date.UTC(1904,0,1) : Date.UTC(1899,11,30);return new Date(base + Math.round(n*86400000));}
   function normalizeLocalDate(d){return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0,0,0,0);}
@@ -553,7 +562,7 @@
     return null;
   }
 
-  // KPI Charts
+  // KPI Charts (mini)
   function initChart(id,label,color){
     const el=document.getElementById(id); if(!el) return;
     const ctx=el.getContext('2d');
@@ -1190,47 +1199,42 @@
     await renderYearDisciplinesFromFirebase(kpi, year);
   }
 
-  // >>> Disciplines nos cards — sempre mês atual (com fallback anual)
-  function computeTrendDelta(arr){
-    if(!arr || arr.length<2) return {arrow:'•', color:'var(--text-gray)', val:0};
-    const deltas=[];
-    for(let i=1;i<arr.length;i++) deltas.push(arr[i]-arr[i-1]);
-    const k=Math.min(2,deltas.length);
-    const recent=deltas.slice(-k);
-    const avg=recent.reduce((a,b)=>a+b,0)/k;
-    if(avg>0.5) return {arrow:'↑', color:'var(--trend-up)', val:avg};
-    if(avg<-0.5) return {arrow:'↓', color:'var(--trend-down)', val:avg};
-    return {arrow:'↔', color:'var(--trend-flat)', val:avg};
+  // ===== NOVO: setas de tendência mês atual vs mês anterior (para cards)
+  function computePct(total, done){
+    const T=Number(total||0), D=Number(done||0);
+    return T>0 ? Math.floor((D/T)*100) : 0;
   }
-  function buildAnnualSeriesMap(yearTotal){
-    const map={};
-    (yearTotal||[]).forEach(r=>{
-      map[r.name]=[ (r.total>0? Math.floor((r.done/r.total)*100):0) ];
-    });
-    return map;
-  }
-  function buildMonthlySeriesMap(perMonth){
+  function buildDisciplinePctSeries(perMonth){
     const series={};
-    perMonth.forEach((monthRows, idx)=>{
-      (monthRows||[]).forEach(r=>{
-        const pct = r.total>0 ? Math.floor((r.done/r.total)*100) : 0;
-        if(!series[r.name]) series[r.name]=Array(idx).fill(null);
-        series[r.name][idx]=pct;
+    for(let m=0;m<12;m++){
+      const rows=Array.isArray(perMonth?.[m])?perMonth[m]:[];
+      rows.forEach(r=>{
+        const name=r.name;
+        if(!series[name]) series[name]=Array(12).fill(null);
+        const p=(r.pct!=null)?Number(r.pct):computePct(r.total,r.done);
+        series[name][m]=p;
       });
-      Object.keys(series).forEach(name=>{
-        if(series[name].length<=idx) series[name][idx]=null;
-      });
-    });
+    }
     Object.keys(series).forEach(name=>{
-      let last=0;
-      for(let i=0;i<series[name].length;i++){
-        if(series[name][i]==null) series[name][i]=last;
-        else last=series[name][i];
+      let last=null;
+      for(let m=0;m<12;m++){
+        if(series[name][m]==null){
+          series[name][m]=(last==null?0:last);
+        }else{
+          last=series[name][m];
+        }
       }
     });
     return series;
   }
-  function renderExpandedList(listEl, rows, annualSeriesMap){
+  function computeArrowFromPrev(current, prev){
+    const c=Number(current||0), p=Number(prev||0);
+    if(isNaN(c)||isNaN(p)) return {arrow:'•', color:'var(--text-gray)'};
+    if(c>p) return {arrow:'↑', color:'var(--trend-up)'};
+    if(c<p) return {arrow:'↓', color:'var(--trend-down)'};
+    return {arrow:'↔', color:'var(--trend-flat)'};
+  }
+  function renderExpandedListWithMonthlyTrend(listEl, rows, perMonth){
     if(!listEl) return;
     listEl.innerHTML='';
     if(!rows || !rows.length){
@@ -1240,6 +1244,11 @@
       listEl.appendChild(empty);
       return;
     }
+    const seriesMap=buildDisciplinePctSeries(perMonth);
+    const now=new Date();
+    const currentMonthIndex=now.getMonth();
+    const prevMonthIndex=Math.max(0,currentMonthIndex-1);
+
     rows.forEach(r=>{
       const item=document.createElement('div');
       item.className='disc-list-item';
@@ -1252,25 +1261,25 @@
       meta.className='meta';
 
       const count=document.createElement('div');
-      count.textContent=`${r.done}/${r.total}`;
+      count.textContent=`${Number(r.done||0)}/${Number(r.total||0)}`;
 
-      const pct=document.createElement('div');
-      const p = (r.pct!=null? r.pct : (r.total>0? Math.floor((r.done/r.total)*100):0));
-      pct.className='pct';
-      pct.textContent=`${p}%`;
+      const pctDiv=document.createElement('div');
+      const p=(r.pct!=null)?Number(r.pct):computePct(r.total,r.done);
+      pctDiv.className='pct';
+      pctDiv.textContent=`${p}%`;
+
+      const series=seriesMap[r.name]||Array(12).fill(0);
+      const curr=series[currentMonthIndex] ?? p;
+      const prev=series[prevMonthIndex] ?? curr;
+      const trend=computeArrowFromPrev(curr, prev);
 
       const trendSpan=document.createElement('div');
       trendSpan.className='trend';
-      const series = annualSeriesMap?.[r.name] || null;
-      let trend = {arrow:'•', color:'var(--text-gray)'}
-      if(series && series.length>1){
-        trend = computeTrendDelta(series);
-      }
       trendSpan.textContent=trend.arrow;
       trendSpan.style.color=trend.color;
 
       meta.appendChild(count);
-      meta.appendChild(pct);
+      meta.appendChild(pctDiv);
       meta.appendChild(trendSpan);
 
       item.appendChild(name);
@@ -1278,6 +1287,8 @@
       listEl.appendChild(item);
     });
   }
+
+  // Leitura de disciplinas
   function getExpandedListElementsByKPI(kpi){
     if(kpi==='OATS') return { list: document.getElementById('disciplineList-oats') };
     if(kpi==='SCE')  return { list: document.getElementById('disciplineList-sce') };
@@ -1295,8 +1306,8 @@
     const node=await readDisciplinesNode(kpi, year);
     if(!node){ list.innerHTML='<div class="value-text">No data.</div>'; return; }
     const rows = Array.isArray(node.yearTotal)? node.yearTotal : [];
-    const annualSeries = Array.isArray(node.perMonth) ? buildMonthlySeriesMap(node.perMonth) : buildAnnualSeriesMap(rows);
-    renderExpandedList(list, rows, annualSeries);
+    const perMonth = Array.isArray(node.perMonth)? node.perMonth : Array(12).fill([]);
+    renderExpandedListWithMonthlyTrend(list, rows, perMonth);
   }
   async function loadMonthDisciplinesIntoCard(kpi, year, monthIndex){
     const {list}=getExpandedListElementsByKPI(kpi);
@@ -1309,8 +1320,7 @@
     if(!rows.length){
       rows = Array.isArray(node.yearTotal) ? node.yearTotal : [];
     }
-    const annualSeries = Array.isArray(node.perMonth) ? buildMonthlySeriesMap(node.perMonth) : buildAnnualSeriesMap(Array.isArray(node.yearTotal)?node.yearTotal:[]);
-    renderExpandedList(list, rows, annualSeries);
+    renderExpandedListWithMonthlyTrend(list, rows, Array.isArray(node.perMonth)? node.perMonth : Array(12).fill([]));
   }
   async function loadCurrentMonthDisciplinesIntoCard(kpi){
     const now=new Date();
@@ -1323,8 +1333,7 @@
     const perMonth = Array.isArray(node.perMonth)? node.perMonth : [];
     const rowsCandidate = perMonth?.[theMonth] || [];
     const rows = (rowsCandidate && rowsCandidate.length) ? rowsCandidate : (Array.isArray(node.yearTotal)? node.yearTotal : []);
-    const annualSeries = Array.isArray(node.perMonth) ? buildMonthlySeriesMap(node.perMonth) : buildAnnualSeriesMap(Array.isArray(node.yearTotal)?node.yearTotal:[]);
-    renderExpandedList(list, rows, annualSeries);
+    renderExpandedListWithMonthlyTrend(list, rows, Array.isArray(node.perMonth)? node.perMonth : Array(12).fill([]));
   }
 
   // Expand card — sempre mês atual
