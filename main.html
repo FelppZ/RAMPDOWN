@@ -32,7 +32,6 @@
       color:var(--text-dark);min-height:100vh;font-family:var(--font-light)
     }
 
-    /* HEADER */
     header{
       position:sticky;top:0;background:var(--tech-black);height:100px;display:flex;align-items:center;padding:0 50px;overflow:hidden;z-index:1000;
       box-shadow: 0 8px 24px rgba(0,0,0,.22);
@@ -60,8 +59,17 @@
     .dot{width:8px;height:8px;border-radius:50%;background:#444}
     .online{color:var(--success)}.online .dot{background:var(--success);box-shadow:0 0 10px var(--success)}
     .offline{color:var(--danger)}.offline .dot{background:var(--danger);box-shadow:0 0 10px var(--danger)}
-
-    /* SIDEBAR */
+    
+    .admin-trigger{position:fixed;bottom:30px;right:30px;background:#000;color:#fff;width:45px;height:45px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.4;z-index:1100}
+    .admin-trigger:hover{opacity:1}
+     .update-panel{display:none;margin-top:20px;padding:20px;background:#fff;border:1px solid #e5e7eb;border-radius:16px}
+    
+    .notify .dot{width:10px; height:10px; border-radius:50%; margin-top:4px;}
+    .notify.success .dot{background:#10b981}
+    .notify.error .dot{background:#ef4444}
+    .notify.info .dot{background:#2563eb}
+    .notify.warning .dot{background:#f59e0b}
+    
     .sidebar{position:fixed;top:100px;left:0;bottom:0;width:220px;background:var(--sidebar-bg);color:#fff;display:flex;flex-direction:column;padding:16px 10px;z-index:900;border-right:1px solid rgba(255,255,255,.08);transition:transform .25s ease}
     .sidebar.hidden{transform:translateX(-230px)}
     .sidebar nav{display:flex;flex-direction:column;gap:6px;height:100%}
@@ -80,11 +88,9 @@
     }
     .sidebar .toggle-arrow:hover{opacity:1;background:#000}
 
-    /* MAIN */
     .container{max-width:1300px;margin:40px auto;padding:0 40px;margin-left:220px;transition:margin-left .25s ease}
     .presentation-mode .container{margin-left:0}
 
-    /* Pages */
     .page{display:block;opacity:0;transform: translateY(8px);pointer-events:none;transition: opacity var(--page-fade-duration) var(--page-fade-ease), transform var(--page-fade-duration) var(--page-fade-ease);position: relative;z-index: 0;}
     .page.active{opacity:1;transform: translateY(0);pointer-events:auto;z-index: 1;}
     .page:not(.active){ visibility:hidden; height:0; overflow:hidden; }
@@ -98,7 +104,6 @@
       background:linear-gradient(90deg,rgba(0,0,0,.08),rgba(0,0,0,.02))
     }
 
-    /* KPIs */
     .kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(350px,1fr));gap:30px;align-items:start}
     .card{position:relative;background:#fff;padding:35px;border-radius:20px;border:1px solid #f0f0f0;box-shadow:0 4px 15px rgba(0,0,0,.03);transition:.3s}
     .card:hover{transform:translateY(-5px);box-shadow:0 12px 30px rgba(0,0,0,.08)}
@@ -125,12 +130,10 @@
     .chart-container{height:110px;width:100%;}
     .card-title{font-family:var(--font-bold);font-size:1.45rem;letter-spacing:.6px;color:var(--text-dark);text-transform:uppercase;margin-bottom:18px}
 
-    /* Reports */
     .report-controls{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
     .report-controls .btn{padding:8px 12px;border:1px solid #111;border-radius:999px;background:#fff;color:#111;cursor:pointer;transition:.2s;font-weight:600}
     .report-controls .btn:hover{background:#111;color:#fff}
     .report-controls .btn.active{background:linear-gradient(120deg, var(--accent), #3b82f6);color:#fff;border-color:#1e3a8a;box-shadow:0 6px 18px rgba(37,99,235,.25)}
-    .time-filter{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
     .time-filter label{font-size:12px;color:#334155}
     .time-filter select{padding:8px;border:1px solid #111;border-radius:10px;background:#fff;color:#111;cursor:pointer;transition:.2s;font-weight:600}
     .time-filter select:hover{ box-shadow:0 0 0 3px rgba(37,99,235,.12) }
@@ -138,7 +141,6 @@
     .reports-chart{height:300px}
     .reports-hint{ color:#334155; font-size:.9rem; margin-top:8px; }
 
-    /* Disciplines (reports) */
     .discipline-wrap{background:#fff;border:1px solid var(--border);border-radius:16px;padding:16px;margin-top:16px;box-shadow:0 8px 24px rgba(0,0,0,.06)}
     .discipline-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
     .discipline-title{font-family:var(--font-bold);font-size:1.05rem}
@@ -147,12 +149,7 @@
     .discipline-table tbody td{font-size:.9rem;padding:10px 12px;border-bottom:1px solid #eef2f7}
     .discipline-table tbody tr:nth-child(odd){background:#fcfdff}
     .discipline-table tbody tr:hover{background:#f3f6fb}
-    .discipline-table th:first-child,.discipline-table td:first-child{width:45%}
-    .discipline-table th:nth-child(2),.discipline-table td:nth-child(2){width:18%;text-align:right}
-    .discipline-table th:nth-child(3),.discipline-table td:nth-child(3){width:18%;text-align:right}
-    .discipline-table th:nth-child(4),.discipline-table td:nth-child(4){width:19%;text-align:right}
 
-    /* LISTA COMPACTA (expanded cards) — scroll oculto */
     .disc-list{
       display:flex; flex-direction:column; gap:6px;
       max-height:500px; overflow:auto; padding:2px;
@@ -160,38 +157,17 @@
     }
     .disc-list::-webkit-scrollbar{width:0;height:0;}
     .disc-list::-webkit-scrollbar-thumb{background:transparent;border-radius:8px;}
-
     .disc-list-item{
       display:flex; align-items:center; gap:8px;
       padding:8px 10px; border:1px solid var(--border); border-radius:10px;
       background:#fff;
       opacity: 0; transform: translateY(6px);
     }
-    .disc-list-item .name{
-      font-family:var(--font-bold); color:#0b0f19; flex:1; font-size:.90rem;
-      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
-    }
-    .disc-list-item .meta{
-      display:flex; align-items:center; gap:10px; color:#334155; font-size:.82rem;
-    }
-    .disc-list-item .pct{
-      font-family:var(--font-bold); min-width:40px; text-align:right;
-    }
-    .disc-list-item .trend{
-      font-family:var(--font-bold);
-    }
+    .disc-list-item .name{ font-family:var(--font-bold); color:#0b0f19; flex:1; font-size:.90rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .disc-list-item .meta{ display:flex; align-items:center; gap:10px; color:#334155; font-size:.82rem; }
+    .disc-list-item .pct{ font-family:var(--font-bold); min-width:40px; text-align:right; }
+    .disc-list-item .trend{ font-family:var(--font-bold); }
 
-    /* ADMIN */
-    .admin-trigger{position:fixed;bottom:30px;right:30px;background:#000;color:#fff;width:45px;height:45px;border-radius:50%;display:flex;align-items:center;justify-content:center;cursor:pointer;opacity:.4;z-index:1100}
-    .admin-trigger:hover{opacity:1}
-    .update-panel{display:none;margin-top:20px;padding:20px;background:#fff;border:1px solid #e5e7eb;border-radius:16px}
-    .controls{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap;margin-bottom:10px}
-    input[type=file]{padding:8px;border:1px solid #e2e8f0;border-radius:8px;background:#fff}
-    .btn{padding:10px 14px;border:1px solid #111;background:#111;color:#fff;border-radius:6px;cursor:pointer}
-    .btn:hover{background:#000}
-    .hint{color:#64748b;font-size:12px}
-
-    /* Global show menu button */
     .show-menu-global{
       position:fixed; left:20px; bottom:20px; z-index:950;
       width:42px; height:42px; border-radius:50%;
@@ -200,9 +176,7 @@
       box-shadow:0 4px 12px rgba(0,0,0,.15);
     }
     .show-menu-global.visible{display:flex}
-    .show-menu-global:hover{background:#000}
 
-    /* NOTIFICATIONS */
     .notify-container{
       position:fixed; right:20px; bottom:20px; z-index:1200;
       display:flex; flex-direction:column; gap:10px; max-width:360px;
@@ -213,22 +187,7 @@
       box-shadow:0 10px 30px rgba(0,0,0,.08); color:#0b0f19; font-size:.92rem;
       animation:slideIn .25s ease-out;
     }
-    .notify.success{border-color:#10b98133}
-    .notify.error{border-color:#ef444433}
-    .notify.info{border-color:#2563eb33}
-    .notify.warning{border-color:#f59e0b33}
-    .notify .title{font-family:var(--font-bold); margin-bottom:2px; font-size:.95rem}
-    .notify .msg{color:#334155}
-    .notify .dot{width:10px; height:10px; border-radius:50%; margin-top:4px;}
-    .notify.success .dot{background:#10b981}
-    .notify.error .dot{background:#ef4444}
-    .notify.info .dot{background:#2563eb}
-    .notify.warning .dot{background:#f59e0b}
-    .notify .close{margin-left:auto; cursor:pointer; opacity:.6}
-    .notify .close:hover{opacity:1}
-    @keyframes slideIn{from{transform:translateY(8px); opacity:0;} to{transform:translateY(0); opacity:1;}}
 
-    /* EXPANSÃO KPI — animações */
     .card { transform-origin: top center; }
     .card .card-extra { will-change: max-height, opacity, transform; transform: translateY(-6px) scale(.98); }
     .card.expanded { animation: kpiCardPop .28s cubic-bezier(.2,.7,.2,1); box-shadow: 0 12px 34px rgba(0,0,0,.10), 0 0 0 1px rgba(37,99,235,.08) inset; }
@@ -236,20 +195,43 @@
       transform: translateY(0) scale(1);
       transition: max-height .6s cubic-bezier(0,1,0,1), opacity .35s ease-out .05s, transform .35s ease-out .05s;
     }
-    .card.expanded .card-button { animation: kpiBtnPulse .45s ease-out 1; }
     @keyframes kpiCardPop { 0%{transform:translateY(0) scale(1);} 50%{transform:translateY(-2px) scale(1.01);} 100%{transform:translateY(0) scale(1);} }
-    @keyframes kpiBtnPulse { 0%{box-shadow:0 0 0 0 rgba(37,99,235,0);} 50%{box-shadow:0 0 0 6px rgba(37,99,235,.15);} 100%{box-shadow:0 0 0 0 rgba(37,99,235,0);} }
-    .card.expanded .disc-list { animation: kpiListFade .25s ease-out .08s 1; }
     @keyframes kpiListFade { from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);} }
 
     @keyframes itemFadeIn { from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
-
     .chart-building canvas { filter: drop-shadow(0 2px 6px rgba(37,99,235,.12)); }
+
+    .btn{padding:10px 14px;border:1px solid #111;background:#111;color:#fff;border-radius:6px;cursor:pointer}
+    .btn:hover{background:#000}
   </style>
 </head>
 <body>
 
-<!-- SIDEBAR -->
+<script>
+// ===== GUARD DE ACESSO — exige login prévio (index.html) =====
+(function guardMain(){
+  try{
+    const token = sessionStorage.getItem('auth_token');
+    const exp = Number(sessionStorage.getItem('auth_expires_at') || 0);
+    const now = Date.now();
+
+    if(!token || !exp || now > exp){
+      location.replace('index.html');
+      return;
+    }
+
+    // Renovação opcional (sliding window) — estende por +60min se faltar menos de 30min
+    const THIRTY_MIN = 1 * 60 * 1000;
+    if(exp - now < THIRTY_MIN){
+      sessionStorage.setItem('auth_expires_at', String(now + (1*60*1000)));
+    }
+  }catch(e){
+    location.replace('index.html');
+  }
+})();
+</script>
+
+<!-- SIDEBAR / HEADER / PAGES -->
 <aside class="sidebar" id="sidebar">
   <nav>
     <div class="nav-item active" data-page="page-kpis">
@@ -266,7 +248,7 @@
     </div>
     <div class="nav-item" data-page="page-admin">
       <span class="icon" aria-hidden="true">
-        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1a7.03 7.03 0 0 0-1.69-.98l-.38-2.65A.5.5 0 0 0 13 2h-4c-.24 0 -.44.17-.49.41l-.38 2.65c-.6.23-1.16.53-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46c-.12.22-.07.49.12.64l-2.11-1.62zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7z"/></svg>
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.43 12.98c.04-.32.07-.65.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1a7.03 7.03 0 0 0-1.69-.98l-.38-2.65A.5.5 0 0 0 13 2h-4c-.24 0 -.44.17-.49.41l-.38 2.65c-.6.23-1.16.53-1.69.98l-2.49-1a.5.5 0 0 0-.61.22l-2 3.46c-.12.22-.07.49.12.64l-2.11-1.62zM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0  0 1 0 7z"/></svg>
       </span>
       <span class="label">Admin</span>
     </div>
@@ -274,7 +256,6 @@
   <div class="toggle-arrow" id="toggleSidebar" title="Show/Hide menu">↔</div>
 </aside>
 
-<!-- HEADER -->
 <header>
   <canvas id="bg-canvas"></canvas>
   <div class="header-content">
@@ -292,7 +273,6 @@
   </div>
 </header>
 
-<!-- PAGES -->
 <main class="container">
   <!-- KPIs -->
   <section id="page-kpis" class="page active" aria-hidden="false">
@@ -426,7 +406,18 @@
 <div class="show-menu-global" id="showMenuGlobal" title="Show Menu">»</div>
 <div class="notify-container" id="notifyContainer" aria-live="polite"></div>
 
+
 <script>
+  // Logout utilitário
+  function logout(){
+    try{
+      sessionStorage.removeItem('auth_token');
+      sessionStorage.removeItem('auth_expires_at');
+      sessionStorage.removeItem('auth_user');
+    }catch(e){}
+    location.replace('index.html');
+  }
+
   // Firebase
   const firebaseConfig={apiKey:"AIzaSyDpowacZTDw8AiOQFK1SOY85x8LyNk1088",authDomain:"rampdown-data.firebaseapp.com",projectId:"rampdown-data",databaseURL:"https://rampdown-data-default-rtdb.firebaseio.com",storageBucket:"rampdown-data.firebasestorage.app",messagingSenderId:"971612677227",appId:"1:971612677227:web:74c155f0d5092b96913d2e"};
   if(!firebase.apps.length) firebase.initializeApp(firebaseConfig);
@@ -436,7 +427,6 @@
   const chartInstances={};
   let workbook=null;
 
-  // Notifications
   function notify(msg,type='info',title){
     const container=document.getElementById('notifyContainer');
     if(!container) return;
@@ -453,7 +443,6 @@
     setTimeout(()=>{ el.remove(); }, 6000);
   }
 
-  // Sidebar toggle + global button
   const sidebarEl=document.getElementById('sidebar');
   const showMenuGlobalBtn=document.getElementById('showMenuGlobal');
   const toggleSidebarBtn=document.getElementById('toggleSidebar');
@@ -473,7 +462,6 @@
   toggleSidebarBtn.addEventListener('click',()=>applyPresentationMode(!sidebarHidden));
   showMenuGlobalBtn.addEventListener('click',()=>applyPresentationMode(false));
 
-  // NAV SPA
   const navItems=document.querySelectorAll('.nav-item');
   const pages=document.querySelectorAll('.page');
   function setActivePage(targetId){
@@ -533,7 +521,6 @@
   initHeaderWaves();
   drawHeaderWaves();
 
-  // Helpers
   const toYMD=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
   const fmtLabel=ts=>{
     const d=new Date(ts);
@@ -545,7 +532,6 @@
     return `${dd}/${mm}/${yyyy} ${hh}:${mi}`;
   };
 
-  // Excel date parse
   const EXCEL_1904_SYSTEM=false;
   function excelSerialToDate(n){const base = EXCEL_1904_SYSTEM ? Date.UTC(1904,0,1) : Date.UTC(1899,11,30);return new Date(base + Math.round(n*86400000));}
   function normalizeLocalDate(d){return new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0,0,0,0);}
@@ -562,7 +548,7 @@
     return null;
   }
 
-  // KPI Charts (mini)
+  // KPI Charts mini
   function initChart(id,label,color){
     const el=document.getElementById(id); if(!el) return;
     const ctx=el.getContext('2d');
@@ -588,13 +574,8 @@
     });
   }
 
-  // Força reconstrução do gráfico no expand
   function rebuildMiniChartForCard(cardId){
-    const map={
-      'card-oats':'chart-oats',
-      'card-sce':'chart-sce',
-      'card-crit1':'chart-crit1'
-    };
+    const map={'card-oats':'chart-oats','card-sce':'chart-sce','card-crit1':'chart-crit1'};
     const cid=map[cardId];
     if(!cid) return;
     const chart=chartInstances[cid];
@@ -603,39 +584,33 @@
     if(!chart || !canvas || !container) return;
 
     container.classList.add('chart-building');
-
     try{
-      chart.reset(); // volta estado inicial
+      chart.reset();
       chart.update({duration:700, easing:'easeOutCubic'});
-    }catch(e){
-      chart.update();
-    }finally{
+    }catch(e){ chart.update(); }
+    finally{
       setTimeout(()=>container.classList.remove('chart-building'), 800);
     }
   }
 
-  // Animação stagger para a lista de disciplinas
   function animateStaggerList(listEl){
     const items = Array.from(listEl.querySelectorAll('.disc-list-item'));
-    const base = 60; // ms entre itens
+    const base = 60;
     items.forEach((it, idx)=>{
       it.style.opacity='0';
       it.style.transform='translateY(6px)';
       it.style.animation='none';
-      // força reflow para reiniciar animação
       void it.offsetWidth;
       it.style.animation = `itemFadeIn .28s ease-out ${idx*base}ms forwards`;
     });
   }
 
-  // Status
   db.ref(".info/connected").on("value",(snap)=>{
     const sd=document.getElementById('sync-status'); const st=document.getElementById('status-text');
     if(snap.val()===true){ sd.className='online'; st.textContent='STATUS: ONLINE'; }
     else { sd.className='offline'; st.textContent='STATUS: CONNECTING'; }
   });
 
-  // KPIs live (cards)
   db.ref('dashboard_live').on('value', (snapshot)=>{
     const data=snapshot.val(); if(!data) return;
     for(const id of kpis){
@@ -652,7 +627,6 @@
     }
   });
 
-  // KPI mini-series (7 dias)
   const DAYS_BACK=7;
   function getLastDaysKeys(n){const out=[];const now=new Date();for(let i=n-1;i>=0;i--){const d=new Date(now.getFullYear(),now.getMonth(),now.getDate()-i);out.push(toYMD(d));}return out;}
   kpis.forEach(kpi=>{
@@ -684,8 +658,8 @@
       });
     });
   });
-
   // IW39 parsing
+   // IW39 parsing
   const IDX_A=0, IDX_D=8, IDX_J=14, IDX_L=15, IDX_M=12;
 
   document.getElementById('file-input')?.addEventListener('change', async (ev)=>{
