@@ -30,16 +30,14 @@
 
     .login-container{ display:flex; min-height:100vh; isolation:isolate; }
 
-    /* Lado esquerdo: agora com conteúdo ancorado à lateral esquerda */
     .login-left{
       position:relative; flex:1; color:#fff; overflow:hidden;
-      display:flex; align-items:flex-start; justify-content:flex-start; /* ancora topo/esquerda */
+      display:flex; align-items:flex-start; justify-content:flex-start;
       padding:40px 28px;
       background: linear-gradient(135deg, #0b0f19 10%, #0d1328 55%, #10183a 100%);
       border-right: 1px solid rgba(255,255,255,0.12);
-      text-align:left; /* textos à esquerda */
+      text-align:left;
     }
-    /* Glow animado sutil */
     .orb{
       position:absolute; width:680px; height:680px; filter:blur(80px); opacity:.35; border-radius:50%;
       background:radial-gradient(circle at 30% 30%, #2563eb 0%, transparent 55%);
@@ -53,21 +51,20 @@
     @keyframes float1{ from{transform:translateY(0)} to{transform:translateY(18px)} }
     @keyframes float2{ from{transform:translateY(0)} to{transform:translateY(-16px)} }
 
-    /* Marca na lateral esquerda (controle fino por top/left) */
     .login-brand{
       position:absolute; z-index:2;
-      top: 12%;       /* distância do topo */
-      left: 4%;       /* distância da borda esquerda */
+      top: 12%;
+      left: 4%;
       transform: none;
       width: min(740px, 92%);
       display:flex; flex-direction:column; gap:16px;
-      align-items: flex-start; /* esquerda */
-      text-align: left;        /* esquerda */
+      align-items: flex-start;
+      text-align: left;
     }
     .login-logo{
       height:64px; object-fit:contain; opacity:.95;
       filter: drop-shadow(0 6px 20px rgba(0,0,0,.25));
-      margin: 0; /* sem centralização */
+      margin: 0;
     }
     .login-title{
       font-family:var(--font-bold); font-size:2.2rem; letter-spacing:1.5px;
@@ -77,16 +74,13 @@
       max-width: 560px;
     }
 
-    /* Ondas */
     #waves-canvas{ position:absolute; left:0; bottom:0; width:100%; height:120px; opacity:.45; pointer-events:none; z-index:1 }
 
-    /* Lado direito: branco */
     .login-right{
       flex:1; display:flex; align-items:center; justify-content:center; padding:48px;
       background: #ffffff;
     }
 
-    /* Card (glass por padrão) */
     .login-form{
       position:relative; width:100%; max-width:380px;
       border-radius:20px; padding:28px;
@@ -136,14 +130,6 @@
 
     .footer-note{ margin-top:14px; color:#94a3b8; font-size:.85rem; text-align:center; }
 
-    /* Card SÓLIDO opcional (descomente para usar em vez do glass)
-    .login-form{
-      background:#ffffff; color:#0b0f19; border:1px solid #e5e7eb;
-      box-shadow:0 12px 36px rgba(0,0,0,.10); backdrop-filter:none;
-    }
-    */
-
-    /* Responsivo */
     @media (max-width: 960px) {
       .login-container{ flex-direction:column }
       .login-left, .login-right{ padding:28px; }
@@ -161,7 +147,6 @@
 </head>
 <body>
   <div class="login-container">
-    <!-- ESQUERDA (conteúdo ancorado à lateral esquerda) -->
     <div class="login-left">
       <div class="orb"></div>
       <div class="orb2"></div>
@@ -175,7 +160,6 @@
       <canvas id="waves-canvas"></canvas>
     </div>
 
-    <!-- DIREITA (fundo branco) -->
     <div class="login-right">
       <form class="login-form" id="loginForm" autocomplete="off" novalidate>
         <h2>Login</h2>
@@ -260,6 +244,14 @@
       }
     }
 
+    function generateSessionToken(){
+      try{
+        return crypto.getRandomValues(new Uint32Array(4)).join('-');
+      }catch(e){
+        return String(Date.now()) + '-' + Math.random().toString(36).slice(2);
+      }
+    }
+
     function checkLogin() {
       const pass = passInput.value.trim();
       errorEl.textContent = '';
@@ -271,7 +263,22 @@
       const VALID = 'modec@ramp'; // ajuste sua senha real
       if(pass === VALID) {
         setLoading(true);
-        setTimeout(()=>{ window.location.href = 'main.html'; }, 700);
+
+        // Emite token de sessão (1h)
+        const token = generateSessionToken();
+        const expiresAt = Date.now() + (60 * 60 * 1000);
+
+        try{
+          sessionStorage.setItem('auth_token', token);
+          sessionStorage.setItem('auth_expires_at', String(expiresAt));
+          sessionStorage.setItem('auth_user', 'admin');
+        }catch(e){
+          errorEl.textContent = 'Your browser blocked session storage. Please enable it.';
+          setLoading(false);
+          return;
+        }
+
+        setTimeout(()=>{ window.location.replace('main.html'); }, 500);
       } else {
         errorEl.textContent = 'Wrong password';
         passInput.focus(); passInput.select();
